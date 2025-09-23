@@ -10,6 +10,7 @@ import cors from "cors";
 process.env.TZ = 'UTC';
 import usersRoute from "./routes/usersRoute.js";
 import mailingRoute from "./routes/mailingRoute.js";
+import { wakeupJob } from "./config/cron.js";
 dotenv.config();
 //
 const app = express();
@@ -25,9 +26,9 @@ app.use(rateLimiter);
 let test = false;
 
 // cron jobs
-// if (process.env.NODE_ENV === "production" || test) {
-//     wakeupJob.start();
-// }
+if (process.env.NODE_ENV === "production" || test) {
+    wakeupJob.start();
+}
 
 const PORT = process.env.PORT || 5001;
 
