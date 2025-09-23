@@ -25,9 +25,9 @@ app.use(rateLimiter);
 let test = false;
 
 // cron jobs
-if (process.env.NODE_ENV === "production" || test) {
-    wakeupJob.start();
-}
+// if (process.env.NODE_ENV === "production" || test) {
+//     wakeupJob.start();
+// }
 
 const PORT = process.env.PORT || 5001;
 
