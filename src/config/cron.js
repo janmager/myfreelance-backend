@@ -10,6 +10,7 @@ export const wakeupJob = new cron.CronJob("*/14 * * * *", function () {
   
   https
     .get(API_URL+'/api/health', (res) => {
+      console.log(`[CRON] ${timeString} | Health check sent`);
     })
-    .on("error", (e) => console.error("Error while sending request", e));
+    .on("error", (e) => console.error(`[CRON] ${timeString} | Error while sending request`, e));
 });
