@@ -24,6 +24,7 @@ export async function initializeDatabase() {
                 type TEXT DEFAULT 'user',
                 state TEXT DEFAULT 'to-confirm',
                 phone TEXT,
+                language TEXT DEFAULT 'pl',
                 register_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
                 updated_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
                 logged_at TIMESTAMP DEFAULT NULL,
@@ -31,6 +32,31 @@ export async function initializeDatabase() {
                 avatar TEXT DEFAULT '👤'
             )
         `;
+
+        // Ensure new columns exist
+        try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'pl'`; } catch (e) {}
+        
+        await sql`
+            CREATE TABLE IF NOT EXISTS clients (
+                client_id TEXT UNIQUE PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                phone TEXT,
+                address TEXT,
+                city TEXT,
+                state TEXT,
+                zip TEXT,
+                status TEXT DEFAULT 'active',
+                country TEXT,
+                nip TEXT,
+                type TEXT DEFAULT 'personal',
+                created_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
+                updated_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
+                user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE
+            )
+        `;
+
+        try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'personal'`; } catch (e) {}
         
     } catch (error) {
         console.error('Error initializing database:', error);

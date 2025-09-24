@@ -422,7 +422,7 @@ export async function changePassword(req, res) {
 export async function editProfile(req, res) {
   try {
     // Support both PUT (body) and query parameters
-    const { user_id, name, phone, active_room, push_notifications, type, avatar } = req.method === 'PUT' ? req.body : req.query;
+    const { user_id, name, phone, active_room, push_notifications, type, avatar, language } = req.method === 'PUT' ? req.body : req.query;
     
     // Validate required fields
     if (!user_id) {
@@ -486,6 +486,15 @@ export async function editProfile(req, res) {
       changes.type = type;
       hasChanges = true;
     }
+
+    if (language !== undefined && normalizeValue(language) !== normalizeValue(currentUser.language)) {
+      const supported = ['pl', 'en'];
+      if (!supported.includes(String(language))) {
+        return res.status(400).json({ message: "Unsupported language.", response: false });
+      }
+      changes.language = language;
+      hasChanges = true;
+    }
     
     if (avatar !== undefined && normalizeValue(avatar) !== normalizeValue(currentUser.avatar)) {
       changes.avatar = avatar;
@@ -504,7 +513,7 @@ export async function editProfile(req, res) {
     // Execute UPDATE query with all changed fields using template literals
     let updatedUser;
     
-    if (changes.name !== undefined && changes.phone !== undefined && changes.active_room !== undefined && changes.push_notifications !== undefined && changes.type !== undefined && changes.avatar !== undefined) {
+    if (changes.name !== undefined && changes.phone !== undefined && changes.active_room !== undefined && changes.push_notifications !== undefined && changes.type !== undefined && changes.avatar !== undefined && changes.language !== undefined) {
       // Update all fields
       updatedUser = await sql`
         UPDATE users 
@@ -514,6 +523,16 @@ export async function editProfile(req, res) {
             push_notifications = ${changes.push_notifications},
             type = ${changes.type},
             avatar = ${changes.avatar},
+            language = ${changes.language},
+            updated_at = (NOW() + INTERVAL '2 hours')
+        WHERE user_id = ${user_id}
+        RETURNING *
+      `;
+    } else if (changes.name !== undefined && changes.active_room !== undefined && changes.push_notifications !== undefined && changes.type !== undefined && changes.avatar !== undefined) {
+    } else if (changes.language !== undefined) {
+      updatedUser = await sql`
+        UPDATE users 
+        SET language = ${changes.language},
             updated_at = (NOW() + INTERVAL '2 hours')
         WHERE user_id = ${user_id}
         RETURNING *

@@ -10,6 +10,8 @@ import cors from "cors";
 process.env.TZ = 'UTC';
 import usersRoute from "./routes/usersRoute.js";
 import mailingRoute from "./routes/mailingRoute.js";
+import clientsUserRoutes from "./routes/clientsUserRoutes.js";
+import clientsAdminRoutes from "./routes/clientsAdminRoutes.js";
 import { wakeupJob } from "./config/cron.js";
 dotenv.config();
 //
@@ -42,11 +44,16 @@ initializeDatabase().then(() => {
 // Routes
 app.use("/api/users", usersRoute);
 app.use("/api/mailing", mailingRoute);
+app.use("/api/clients", clientsUserRoutes);
+app.use("/api/admin/clients", clientsAdminRoutes);
 
 
 // Log all routes
 console.log('📋 [ROUTES] Available API endpoints:');
 console.log('  - /api/users - User management');
+console.log('  - /api/mailing - Email management');
+console.log('  - /api/clients - Client management');
+console.log('  - /api/admin/clients - Admin client management');
 
 app.get("/api/health", (req, res) => {
     res.send("API is working fine.");
