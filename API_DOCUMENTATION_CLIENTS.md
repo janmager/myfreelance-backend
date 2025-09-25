@@ -1,7 +1,7 @@
 # Clients API Documentation
 
 ## Overview
-This API provides endpoints for managing clients in the MyFreelance application. There are two sets of endpoints:
+This API provides endpoints for managing clients in the Freelario.io application. There are two sets of endpoints:
 - **Admin endpoints** (`/api/admin/clients/*`) - Require admin privileges
 - **User endpoints** (`/api/clients/*`) - Require user authentication
 

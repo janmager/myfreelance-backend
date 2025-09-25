@@ -6,3 +6,4 @@ ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET N
 CREATE INDEX IF NOT EXISTS idx_notes_project_id ON notes(project_id);
 
 
+

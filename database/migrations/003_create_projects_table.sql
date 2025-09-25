@@ -37,3 +37,4 @@ CREATE TRIGGER trigger_update_projects_updated_at
     EXECUTE FUNCTION update_projects_updated_at();
 
 
+

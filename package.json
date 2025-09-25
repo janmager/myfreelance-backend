@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.1.1",
-  "description": "MyFreelance Backend API",
+  "description": "Freelario.io Backend API",
   "main": "src/server.js",
   "scripts": {
     "dev": "clear && nodemon src/server.js",
