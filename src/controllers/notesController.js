@@ -181,11 +181,9 @@ export const listNotes = async (req, res) => {
         const params = [];
         let idx = 1;
 
-        // Ownership: admin can see all, user only own notes
-        if (user.type !== 'admin') {
-            filters.push(`user_id = $${idx++}`);
-            params.push(user_id);
-        }
+        // Always restrict to requesting user
+        filters.push(`user_id = $${idx++}`);
+        params.push(user_id);
 
         if (client_id) {
             filters.push(`client_id = $${idx++}`);

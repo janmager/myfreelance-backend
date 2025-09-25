@@ -154,7 +154,8 @@ export const listTasks = async (req, res) => {
         const filters = [];
         const params = [];
         let idx = 1;
-        if (user.type !== 'admin') { filters.push(`user_id = $${idx++}`); params.push(user_id); }
+        // Always restrict to requesting user
+        { filters.push(`user_id = $${idx++}`); params.push(user_id); }
         if (client_id) { filters.push(`client_id = $${idx++}`); params.push(client_id); }
         if (type) { const allowed = ['client','private']; if (!allowed.includes(type)) return res.status(400).json({ error: "Invalid type" }); filters.push(`type = $${idx++}`); params.push(type); }
         if (status) { const allowed = ['todo','in_progress','done']; if (!allowed.includes(status)) return res.status(400).json({ error: "Invalid status" }); filters.push(`status = $${idx++}`); params.push(status); }
