@@ -9,7 +9,11 @@
     "migrate:league-fk": "node run-migration.js league-fk-migration.sql",
     "migrate:team-fk": "node run-migration.js team-fk-migration.sql"
   },
-  "keywords": ["freelance", "backend", "api"],
+  "keywords": [
+    "freelance",
+    "backend",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",
@@ -23,6 +27,7 @@
     "@upstash/redis": "^1.34.9",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
+    "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "cron": "^4.3.2",
     "dotenv": "^16.5.0",

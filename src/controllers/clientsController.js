@@ -209,11 +209,27 @@ export const getClientsByUserId = async (req, res) => {
             return res.status(403).json({ error: "Access denied. Can only view your own clients." });
         }
 
-        // Pobierz klientów
+        // Pobierz klientów wraz z licznikami projektów i umów danego użytkownika
         const clients = await sql`
-            SELECT * FROM clients 
-            WHERE user_id = ${queryUserId}
-            ORDER BY created_at DESC
+            SELECT 
+                c.*,
+                COALESCE(p.cnt, 0) AS projects_count,
+                COALESCE(k.cnt, 0) AS contracts_count
+            FROM clients c
+            LEFT JOIN (
+                SELECT client_id, COUNT(*) AS cnt
+                FROM projects
+                WHERE user_id = ${queryUserId}
+                GROUP BY client_id
+            ) p ON p.client_id = c.client_id
+            LEFT JOIN (
+                SELECT client_id, COUNT(*) AS cnt
+                FROM contracts
+                WHERE user_id = ${queryUserId}
+                GROUP BY client_id
+            ) k ON k.client_id = c.client_id
+            WHERE c.user_id = ${queryUserId}
+            ORDER BY c.created_at DESC
         `;
 
         res.json({ clients });

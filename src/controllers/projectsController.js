@@ -47,7 +47,7 @@ export const addProject = async (req, res) => {
 
 export const editProject = async (req, res) => {
     try {
-        const { user_id, id, client_id, name, type, description, status, start_date, end_date } = req.body;
+        const { user_id, id, client_id, name, type, description, status, start_date, end_date, icon } = req.body;
         const user = await getActiveUserOrError(user_id, res);
         if (!user) return;
         if (!id) return res.status(400).json({ error: "id is required" });
@@ -72,6 +72,7 @@ export const editProject = async (req, res) => {
         if (status !== undefined) updates.status = status;
         if (start_date !== undefined) updates.start_date = start_date;
         if (end_date !== undefined) updates.end_date = end_date;
+        if (icon !== undefined) updates.icon = icon;
         if (Object.keys(updates).length === 0) return res.status(400).json({ error: "No fields to update" });
 
         const fields = [];
