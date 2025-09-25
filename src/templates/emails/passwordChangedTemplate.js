@@ -24,9 +24,9 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
                 margin: 20px;
             }
             .header {
-                background: linear-gradient(135deg, #efb414 0%, #d4a017 100%);
+                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
                 color: white;
-                padding: 30px 20px;
+                padding: 32px 22px;
                 text-align: center;
             }
             .logo {
@@ -50,11 +50,11 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
                 text-align: center;
             }
             .success-box {
-                background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-                border: 2px solid #10b981;
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border: 2px solid #3b82f6;
                 border-radius: 12px;
-                padding: 25px;
-                margin: 25px 0;
+                padding: 22px;
+                margin: 22px 0;
                 text-align: center;
             }
             .success-icon {
@@ -69,21 +69,21 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
                 text-align: left;
             }
             .warning-box {
-                background-color: #fff3cd;
-                border: 1px solid #ffeaa7;
-                border-radius: 8px;
-                padding: 15px;
-                margin: 20px 0;
-                color: #856404;
-                font-size: 14px;
+                background-color: #fff7ed;
+                border: 1px solid #fed7aa;
+                border-radius: 12px;
+                padding: 14px;
+                margin: 18px 0;
+                color: #9a3412;
+                font-size: 13px;
             }
             .footer {
                 text-align: center;
-                padding: 20px 30px;
-                color: #6c757d;
-                font-size: 14px;
-                background-color: #f8f9fa;
-                border-top: 1px solid #e9ecef;
+                padding: 22px 30px;
+                color: #64748b;
+                font-size: 13px;
+                background-color: #f8fafc;
+                border-top: 1px solid #e2e8f0;
             }
         </style>
     </head>

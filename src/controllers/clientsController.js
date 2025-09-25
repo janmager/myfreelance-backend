@@ -12,13 +12,17 @@ export const getAllClientsAdmin = async (req, res) => {
             return res.status(400).json({ error: "admin_user_id is required" });
         }
 
-        // Sprawdź czy user jest adminem
+        // Sprawdź czy user jest adminem i aktywny
         const adminUser = await sql`
-            SELECT type FROM users WHERE user_id = ${admin_user_id}
+            SELECT type, state FROM users WHERE user_id = ${admin_user_id}
         `;
 
         if (adminUser.length === 0) {
             return res.status(404).json({ error: "Admin user not found" });
+        }
+
+        if (adminUser[0].state !== 'active') {
+            return res.status(403).json({ error: "Access denied. User is not active." });
         }
 
         if (adminUser[0].type !== 'admin') {
@@ -51,13 +55,17 @@ export const editClientAdmin = async (req, res) => {
             return res.status(400).json({ error: "admin_user_id and client_id are required" });
         }
 
-        // Sprawdź czy user jest adminem
+        // Sprawdź czy user jest adminem i aktywny
         const adminUser = await sql`
-            SELECT type FROM users WHERE user_id = ${admin_user_id}
+            SELECT type, state FROM users WHERE user_id = ${admin_user_id}
         `;
 
         if (adminUser.length === 0) {
             return res.status(404).json({ error: "Admin user not found" });
+        }
+
+        if (adminUser[0].state !== 'active') {
+            return res.status(403).json({ error: "Access denied. User is not active." });
         }
 
         if (adminUser[0].type !== 'admin') {
@@ -128,13 +136,17 @@ export const getClientById = async (req, res) => {
             return res.status(400).json({ error: "user_id and client_id are required" });
         }
 
-        // Sprawdź czy user istnieje i ma odpowiedni typ
+        // Sprawdź czy user istnieje, jest aktywny i ma odpowiedni typ
         const user = await sql`
-            SELECT type FROM users WHERE user_id = ${user_id}
+            SELECT type, state FROM users WHERE user_id = ${user_id}
         `;
 
         if (user.length === 0) {
             return res.status(404).json({ error: "User not found" });
+        }
+
+        if (user[0].state !== 'active') {
+            return res.status(403).json({ error: "Access denied. User is not active." });
         }
 
         if (!['user', 'admin'].includes(user[0].type)) {
@@ -172,13 +184,17 @@ export const getClientsByUserId = async (req, res) => {
             return res.status(400).json({ error: "user_id is required" });
         }
 
-        // Sprawdź czy user istnieje i ma odpowiedni typ
+        // Sprawdź czy user istnieje, jest aktywny i ma odpowiedni typ
         const user = await sql`
-            SELECT type FROM users WHERE user_id = ${user_id}
+            SELECT type, state FROM users WHERE user_id = ${user_id}
         `;
 
         if (user.length === 0) {
             return res.status(404).json({ error: "User not found" });
+        }
+
+        if (user[0].state !== 'active') {
+            return res.status(403).json({ error: "Access denied. User is not active." });
         }
 
         if (!['user', 'admin'].includes(user[0].type)) {
@@ -215,13 +231,17 @@ export const archiveClient = async (req, res) => {
             return res.status(400).json({ error: "user_id and client_id are required" });
         }
 
-        // Sprawdź czy user istnieje i ma odpowiedni typ
+        // Sprawdź czy user istnieje, jest aktywny i ma odpowiedni typ
         const user = await sql`
-            SELECT type FROM users WHERE user_id = ${user_id}
+            SELECT type, state FROM users WHERE user_id = ${user_id}
         `;
 
         if (user.length === 0) {
             return res.status(404).json({ error: "User not found" });
+        }
+
+        if (user[0].state !== 'active') {
+            return res.status(403).json({ error: "Access denied. User is not active." });
         }
 
         if (!['user', 'admin'].includes(user[0].type)) {
@@ -282,13 +302,17 @@ export const addClient = async (req, res) => {
             return res.status(400).json({ error: "user_id, name, and email are required" });
         }
 
-        // Sprawdź czy user istnieje i ma odpowiedni typ
+        // Sprawdź czy user istnieje, jest aktywny i ma odpowiedni typ
         const user = await sql`
-            SELECT type FROM users WHERE user_id = ${user_id}
+            SELECT type, state FROM users WHERE user_id = ${user_id}
         `;
 
         if (user.length === 0) {
             return res.status(404).json({ error: "User not found" });
+        }
+
+        if (user[0].state !== 'active') {
+            return res.status(403).json({ error: "Access denied. User is not active." });
         }
 
         if (!['user', 'admin'].includes(user[0].type)) {
@@ -349,13 +373,17 @@ export const editClient = async (req, res) => {
             return res.status(400).json({ error: "user_id and client_id are required" });
         }
 
-        // Sprawdź czy user istnieje i ma odpowiedni typ
+        // Sprawdź czy user istnieje, jest aktywny i ma odpowiedni typ
         const user = await sql`
-            SELECT type FROM users WHERE user_id = ${user_id}
+            SELECT type, state FROM users WHERE user_id = ${user_id}
         `;
 
         if (user.length === 0) {
             return res.status(404).json({ error: "User not found" });
+        }
+
+        if (user[0].state !== 'active') {
+            return res.status(403).json({ error: "Access denied. User is not active." });
         }
 
         if (!['user', 'admin'].includes(user[0].type)) {

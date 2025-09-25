@@ -24,9 +24,9 @@ export const confirmAccountEmailTemplate = (email, email_token, user_id) => {
                 margin: 20px;
             }
             .header {
-                background: linear-gradient(135deg, #efb414 0%, #d4a017 100%);
+                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
                 color: white;
-                padding: 30px 20px;
+                padding: 32px 22px;
                 text-align: center;
             }
             .logo {
@@ -51,37 +51,38 @@ export const confirmAccountEmailTemplate = (email, email_token, user_id) => {
             }
             .button {
                 display: inline-block;
-                background: linear-gradient(135deg, #efb414 0%, #d4a017 100%);
+                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
                 color: white;
-                padding: 16px 32px;
+                padding: 14px 28px;
                 text-decoration: none;
-                border-radius: 8px;
-                margin: 25px 0;
-                font-weight: 600;
-                font-size: 16px;
-                box-shadow: 0 4px 12px rgba(239, 180, 20, 0.3);
-                transition: transform 0.2s ease;
+                border-radius: 12px;
+                margin: 24px 0;
+                font-weight: 700;
+                font-size: 15px;
+                box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
             }
             .button:hover {
                 transform: translateY(-2px);
+                box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
             }
             .link-box {
-                background-color: #f8f9fa;
-                border: 1px solid #e9ecef;
-                border-radius: 8px;
-                padding: 15px;
-                margin: 20px 0;
-                word-break: break-all;
-                font-size: 14px;
-                color: #6c757d;
+                background-color: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 14px;
+                margin: 18px 0;
+                word-break: break-word;
+                font-size: 13px;
+                color: #334155;
             }
             .footer {
                 text-align: center;
-                padding: 20px 30px;
-                color: #6c757d;
-                font-size: 14px;
-                background-color: #f8f9fa;
-                border-top: 1px solid #e9ecef;
+                padding: 22px 30px;
+                color: #64748b;
+                font-size: 13px;
+                background-color: #f8fafc;
+                border-top: 1px solid #e2e8f0;
             }
         </style>
     </head>
@@ -98,13 +99,13 @@ export const confirmAccountEmailTemplate = (email, email_token, user_id) => {
             <div class="content">
                 <p style="font-size: 18px; margin-bottom: 25px;">Dziękujemy za rejestrację! Kliknij przycisk poniżej, aby aktywować konto:</p>
                 
-                <a href="${process.env.HOST}/potwierdz-konto?user_id=${user_id}&email_token=${email_token}" class="button">
+                <a href="${process.env.HOST}/confirm-account?user_id=${user_id}&email_token=${email_token}" class="button">
                     Potwierdź konto
                 </a>
                 
                 <p style="font-size: 14px; color: #6c757d; margin-top: 30px;">Jeśli przycisk nie działa, skopiuj link:</p>
                 <div class="link-box">
-                    ${process.env.HOST}/potwierdz-konto?user_id=${user_id}&email_token=${email_token}
+                    ${process.env.HOST}/confirm-account?user_id=${user_id}&email_token=${email_token}
                 </div>
             </div>
             
@@ -123,7 +124,7 @@ Witaj w Typerka!
 
 Dziękujemy za rejestrację! Aby aktywować konto, kliknij link:
 
-${process.env.HOST}/potwierdz-konto?user_id=${user_id}&email_token=${email_token}
+${process.env.HOST}/confirm-account?user_id=${user_id}&email_token=${email_token}
 
 © 2024 Typerka. Wszystkie prawa zastrzeżone.
     `;

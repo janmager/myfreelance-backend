@@ -58,6 +58,39 @@ export async function initializeDatabase() {
 
         try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'personal'`; } catch (e) {}
         
+        // Notes table
+        await sql`
+            CREATE TABLE IF NOT EXISTS notes (
+                id TEXT UNIQUE PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                client_id TEXT REFERENCES clients(client_id) ON DELETE SET NULL,
+                type TEXT CHECK (type IN ('client','idea','private')) NOT NULL DEFAULT 'client',
+                title TEXT,
+                tags TEXT[] DEFAULT '{}',
+                content TEXT,
+                created_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
+                updated_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours')
+            )
+        `;
+
+        // Tasks table
+        await sql`
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT UNIQUE PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                client_id TEXT REFERENCES clients(client_id) ON DELETE SET NULL,
+                type TEXT CHECK (type IN ('client','private')) NOT NULL DEFAULT 'client',
+                title TEXT,
+                priority TEXT CHECK (priority IN ('low','medium','high')) NOT NULL DEFAULT 'medium',
+                status TEXT CHECK (status IN ('todo','in_progress','done')) NOT NULL DEFAULT 'todo',
+                tags TEXT[] DEFAULT '{}',
+                content TEXT,
+                deadline_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
+                updated_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours')
+            )
+        `;
+        
     } catch (error) {
         console.error('Error initializing database:', error);
         throw error;

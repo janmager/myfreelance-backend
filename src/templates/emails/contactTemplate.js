@@ -24,9 +24,9 @@ export const contactEmailTemplate = (email_sender, title, content, timestamp) =>
                 margin: 20px;
             }
             .header {
-                background: linear-gradient(135deg, #efb414 0%, #d4a017 100%);
+                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
                 color: white;
-                padding: 30px 20px;
+                padding: 28px 22px;
                 text-align: center;
             }
             .logo {
@@ -56,10 +56,10 @@ export const contactEmailTemplate = (email_sender, title, content, timestamp) =>
                 margin: 20px 0;
             }
             .message-title {
-                color: #efb414;
+                color: #1f2937;
                 font-size: 18px;
-                font-weight: 600;
-                margin-bottom: 15px;
+                font-weight: 700;
+                margin-bottom: 12px;
             }
             .message-meta {
                 color: #6c757d;
@@ -68,19 +68,19 @@ export const contactEmailTemplate = (email_sender, title, content, timestamp) =>
             }
             .message-content {
                 background-color: white;
-                padding: 15px;
-                border-radius: 6px;
-                border-left: 4px solid #efb414;
+                padding: 16px;
+                border-radius: 10px;
+                border: 1px solid #e5e7eb;
                 white-space: pre-wrap;
-                line-height: 1.5;
+                line-height: 1.6;
             }
             .footer {
                 text-align: center;
-                padding: 20px 30px;
-                color: #6c757d;
-                font-size: 14px;
-                background-color: #f8f9fa;
-                border-top: 1px solid #e9ecef;
+                padding: 22px 30px;
+                color: #64748b;
+                font-size: 13px;
+                background-color: #f8fafc;
+                border-top: 1px solid #e2e8f0;
             }
         </style>
     </head>
