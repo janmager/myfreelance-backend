@@ -22,7 +22,7 @@ async function getActiveUserOrError(user_id, res) {
 
 export const addTask = async (req, res) => {
     try {
-        const { user_id, client_id, type, title, priority, status, tags, content, deadline_at } = req.body;
+        const { user_id, client_id, project_id, type, title, priority, status, tags, content, deadline_at } = req.body;
 
         const user = await getActiveUserOrError(user_id, res);
         if (!user) return;
@@ -56,12 +56,19 @@ export const addTask = async (req, res) => {
             }
         }
 
+        if (project_id) {
+            const project = await sql`SELECT id, user_id, client_id FROM projects WHERE id = ${project_id}`;
+            if (project.length === 0) return res.status(404).json({ error: "Project not found" });
+            if (user.type !== 'admin' && project[0].user_id !== user_id) return res.status(403).json({ error: "Access denied. Project not owned by user." });
+            if (client_id && project[0].client_id && project[0].client_id !== client_id) return res.status(400).json({ error: "Project does not belong to selected client" });
+        }
+
         const id = crypto.randomUUID();
         const inserted = await sql`
             INSERT INTO tasks (
-                id, user_id, client_id, type, title, priority, status, tags, content, deadline_at, created_at, updated_at
+                id, user_id, client_id, project_id, type, title, priority, status, tags, content, deadline_at, created_at, updated_at
             ) VALUES (
-                ${id}, ${user_id}, ${client_id || null}, ${type || 'client'}, ${title}, ${priority || 'medium'}, ${status || 'todo'}, ${Array.isArray(tags) ? tags : []}, ${content || null}, ${deadline_at || null}, NOW(), NOW()
+                ${id}, ${user_id}, ${client_id || null}, ${project_id || null}, ${type || 'client'}, ${title}, ${priority || 'medium'}, ${status || 'todo'}, ${Array.isArray(tags) ? tags : []}, ${content || null}, ${deadline_at || null}, NOW(), NOW()
             ) RETURNING *
         `;
         res.status(201).json({ message: "Task created successfully", task: inserted[0] });
@@ -73,7 +80,7 @@ export const addTask = async (req, res) => {
 
 export const editTask = async (req, res) => {
     try {
-        const { user_id, id, client_id, type, title, priority, status, tags, content, deadline_at } = req.body;
+        const { user_id, id, client_id, project_id, type, title, priority, status, tags, content, deadline_at } = req.body;
 
         const user = await getActiveUserOrError(user_id, res);
         if (!user) return;
@@ -100,6 +107,12 @@ export const editTask = async (req, res) => {
             if (client.length === 0) return res.status(404).json({ error: "Client not found" });
             if (user.type !== 'admin' && client[0].user_id !== user_id) return res.status(403).json({ error: "Access denied. Client not owned by user." });
         }
+        if (project_id) {
+            const project = await sql`SELECT id, user_id, client_id FROM projects WHERE id = ${project_id}`;
+            if (project.length === 0) return res.status(404).json({ error: "Project not found" });
+            if (user.type !== 'admin' && project[0].user_id !== user_id) return res.status(403).json({ error: "Access denied. Project not owned by user." });
+            if (client_id && project[0].client_id && project[0].client_id !== client_id) return res.status(400).json({ error: "Project does not belong to selected client" });
+        }
 
         const updates = {};
         if (client_id !== undefined) updates.client_id = client_id;
@@ -110,6 +123,7 @@ export const editTask = async (req, res) => {
         if (tags !== undefined) updates.tags = Array.isArray(tags) ? tags : [];
         if (content !== undefined) updates.content = content;
         if (deadline_at !== undefined) updates.deadline_at = deadline_at;
+        if (project_id !== undefined) updates.project_id = project_id;
 
         if (Object.keys(updates).length === 0) return res.status(400).json({ error: "No fields to update" });
 

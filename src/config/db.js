@@ -50,6 +50,7 @@ export async function initializeDatabase() {
                 country TEXT,
                 nip TEXT,
                 type TEXT DEFAULT 'personal',
+                avatar TEXT DEFAULT '',
                 created_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
                 updated_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
                 user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE
@@ -57,13 +58,32 @@ export async function initializeDatabase() {
         `;
 
         try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'personal'`; } catch (e) {}
+        try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT ''`; } catch (e) {}
         
+        // Projects table (ensure created before FKs in other tables)
+        await sql`
+            CREATE TABLE IF NOT EXISTS projects (
+                id TEXT UNIQUE PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                client_id TEXT REFERENCES clients(client_id) ON DELETE SET NULL,
+                name TEXT NOT NULL,
+                type TEXT CHECK (type IN ('client','private')) NOT NULL DEFAULT 'private',
+                description TEXT,
+                status TEXT CHECK (status IN ('active','inactive','archived')) NOT NULL DEFAULT 'active',
+                start_date DATE,
+                end_date DATE,
+                created_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
+                updated_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours')
+            )
+        `;
+
         // Notes table
         await sql`
             CREATE TABLE IF NOT EXISTS notes (
                 id TEXT UNIQUE PRIMARY KEY,
                 user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
                 client_id TEXT REFERENCES clients(client_id) ON DELETE SET NULL,
+                project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
                 type TEXT CHECK (type IN ('client','idea','private')) NOT NULL DEFAULT 'client',
                 title TEXT,
                 tags TEXT[] DEFAULT '{}',
@@ -79,6 +99,7 @@ export async function initializeDatabase() {
                 id TEXT UNIQUE PRIMARY KEY,
                 user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
                 client_id TEXT REFERENCES clients(client_id) ON DELETE SET NULL,
+                project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
                 type TEXT CHECK (type IN ('client','private')) NOT NULL DEFAULT 'client',
                 title TEXT,
                 priority TEXT CHECK (priority IN ('low','medium','high')) NOT NULL DEFAULT 'medium',
@@ -90,6 +111,10 @@ export async function initializeDatabase() {
                 updated_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours')
             )
         `;
+
+        // Ensure project_id columns exist on already-provisioned DBs
+        try { await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS project_id TEXT REFERENCES projects(id) ON DELETE SET NULL`; } catch (e) {}
+        try { await sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS project_id TEXT REFERENCES projects(id) ON DELETE SET NULL`; } catch (e) {}
         
     } catch (error) {
         console.error('Error initializing database:', error);

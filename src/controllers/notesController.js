@@ -23,7 +23,7 @@ async function getActiveUserOrError(user_id, res) {
 
 export const addNote = async (req, res) => {
     try {
-        const { user_id, client_id, type, title, tags, content } = req.body;
+        const { user_id, client_id, project_id, type, title, tags, content } = req.body;
 
         const user = await getActiveUserOrError(user_id, res);
         if (!user) return;
@@ -47,12 +47,19 @@ export const addNote = async (req, res) => {
             }
         }
 
+        if (project_id) {
+            const proj = await sql`SELECT id, user_id, client_id FROM projects WHERE id = ${project_id}`;
+            if (proj.length === 0) return res.status(404).json({ error: "Project not found" });
+            if (proj[0].client_id && client_id && proj[0].client_id !== client_id) return res.status(400).json({ error: "Project does not belong to selected client" });
+            if (user.type !== 'admin' && proj[0].user_id !== user_id) return res.status(403).json({ error: "Access denied. Project not owned by user." });
+        }
+
         const id = crypto.randomUUID();
         const newNote = await sql`
             INSERT INTO notes (
-                id, user_id, client_id, type, title, tags, content, created_at, updated_at
+                id, user_id, client_id, project_id, type, title, tags, content, created_at, updated_at
             ) VALUES (
-                ${id}, ${user_id}, ${client_id || null}, ${type || 'client'}, ${title || null}, ${Array.isArray(tags) ? tags : []}, ${content || null}, NOW(), NOW()
+                ${id}, ${user_id}, ${client_id || null}, ${project_id || null}, ${type || 'client'}, ${title || null}, ${Array.isArray(tags) ? tags : []}, ${content || null}, NOW(), NOW()
             ) RETURNING *
         `;
 
@@ -65,7 +72,7 @@ export const addNote = async (req, res) => {
 
 export const editNote = async (req, res) => {
     try {
-        const { user_id, id, client_id, type, title, tags, content } = req.body;
+        const { user_id, id, client_id, project_id, type, title, tags, content } = req.body;
 
         const user = await getActiveUserOrError(user_id, res);
         if (!user) return;
@@ -104,6 +111,12 @@ export const editNote = async (req, res) => {
                 return res.status(403).json({ error: "Access denied. Client not owned by user." });
             }
         }
+        if (project_id) {
+            const proj = await sql`SELECT id, user_id, client_id FROM projects WHERE id = ${project_id}`;
+            if (proj.length === 0) return res.status(404).json({ error: "Project not found" });
+            if (user.type !== 'admin' && proj[0].user_id !== user_id) return res.status(403).json({ error: "Access denied. Project not owned by user." });
+            if (client_id && proj[0].client_id && proj[0].client_id !== client_id) return res.status(400).json({ error: "Project does not belong to selected client" });
+        }
 
         const updates = {};
         if (client_id !== undefined) updates.client_id = client_id;
@@ -111,6 +124,7 @@ export const editNote = async (req, res) => {
         if (title !== undefined) updates.title = title;
         if (tags !== undefined) updates.tags = Array.isArray(tags) ? tags : [];
         if (content !== undefined) updates.content = content;
+        if (project_id !== undefined) updates.project_id = project_id;
 
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({ error: "No fields to update" });
