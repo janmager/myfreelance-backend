@@ -174,7 +174,7 @@ export const listTasks = async (req, res) => {
         if (type) { const allowed = ['client','private']; if (!allowed.includes(type)) return res.status(400).json({ error: "Invalid type" }); filters.push(`type = $${idx++}`); params.push(type); }
         if (status) { const allowed = ['todo','in_progress','done']; if (!allowed.includes(status)) return res.status(400).json({ error: "Invalid status" }); filters.push(`status = $${idx++}`); params.push(status); }
         if (priority) { const allowed = ['low','medium','high']; if (!allowed.includes(priority)) return res.status(400).json({ error: "Invalid priority" }); filters.push(`priority = $${idx++}`); params.push(priority); }
-        if (search) { filters.push(`(title ILIKE $${idx} OR content ILIKE $${idx})`); params.push(`%${search}%`); idx++; }
+        if (search) { filters.push(`(title ILIKE $${idx} OR content ILIKE $${idx} OR id = $${idx + 1})`); params.push(`%${search}%`, search); idx += 2; }
 
         const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
         const lim = Math.min(Number(limit) || 50, 100);
