@@ -382,7 +382,8 @@ export const editClient = async (req, res) => {
             zip, 
             country, 
             nip,
-            type
+            type,
+            status
         } = req.body;
 
         if (!user_id || !client_id) {
@@ -446,6 +447,7 @@ export const editClient = async (req, res) => {
         if (country !== undefined) updateData.country = country;
         if (nip !== undefined) updateData.nip = nip;
         if (type !== undefined) updateData.type = type;
+        if (status !== undefined) updateData.status = status;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: "No fields to update" });
@@ -477,6 +479,76 @@ export const editClient = async (req, res) => {
         });
     } catch (error) {
         console.error("Error editing client:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const deleteClient = async (req, res) => {
+    try {
+        const { user_id, client_id } = req.body;
+
+        if (!user_id || !client_id) {
+            return res.status(400).json({ error: "user_id and client_id are required" });
+        }
+
+        // Sprawdź czy user istnieje, jest aktywny i ma odpowiedni typ
+        const user = await sql`
+            SELECT type, state FROM users WHERE user_id = ${user_id}
+        `;
+
+        if (user.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        if (user[0].state !== 'active') {
+            return res.status(403).json({ error: "Access denied. User is not active." });
+        }
+
+        if (!['user', 'admin'].includes(user[0].type)) {
+            return res.status(403).json({ error: "Access denied. Invalid user type." });
+        }
+
+        // Sprawdź czy klient istnieje i należy do usera (chyba że admin)
+        let existingClient;
+        if (user[0].type === 'admin') {
+            existingClient = await sql`
+                SELECT client_id FROM clients WHERE client_id = ${client_id}
+            `;
+        } else {
+            existingClient = await sql`
+                SELECT client_id FROM clients WHERE client_id = ${client_id} AND user_id = ${user_id}
+            `;
+        }
+
+        if (existingClient.length === 0) {
+            return res.status(404).json({ error: "Client not found or access denied" });
+        }
+
+        // Sprawdź czy klient ma powiązane projekty lub umowy
+        const relatedProjects = await sql`
+            SELECT COUNT(*) as count FROM projects WHERE client_id = ${client_id}
+        `;
+
+        const relatedContracts = await sql`
+            SELECT COUNT(*) as count FROM contracts WHERE client_id = ${client_id}
+        `;
+
+        if (relatedProjects[0].count > 0 || relatedContracts[0].count > 0) {
+            return res.status(409).json({ 
+                error: "Cannot delete client with associated projects or contracts. Please remove or reassign them first." 
+            });
+        }
+
+        // Usuń klienta
+        await sql`
+            DELETE FROM clients WHERE client_id = ${client_id}
+        `;
+
+        res.json({ 
+            message: "Client deleted successfully"
+        });
+    } catch (error) {
+        console.error("Error deleting client:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };

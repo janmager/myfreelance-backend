@@ -109,13 +109,20 @@ export const listContracts = async (req, res) => {
     const filters = [];
     const params = [];
     let idx = 1;
-    filters.push(`user_id = $${idx++}`); params.push(user_id);
-    if (client_id) { filters.push(`client_id = $${idx++}`); params.push(client_id); }
-    if (project_id) { filters.push(`project_id = $${idx++}`); params.push(project_id); }
+    filters.push(`c.user_id = $${idx++}`); params.push(user_id);
+    if (client_id) { filters.push(`c.client_id = $${idx++}`); params.push(client_id); }
+    if (project_id) { filters.push(`c.project_id = $${idx++}`); params.push(project_id); }
     const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
     const lim = Math.min(Number(limit) || 50, 100);
     const off = Math.max(Number(offset) || 0, 0);
-    const query = `SELECT * FROM contracts ${whereClause} ORDER BY updated_at DESC LIMIT ${lim} OFFSET ${off}`;
+    const query = `
+      SELECT c.*, p.name as project_name 
+      FROM contracts c 
+      LEFT JOIN projects p ON c.project_id = p.id 
+      ${whereClause} 
+      ORDER BY c.updated_at DESC 
+      LIMIT ${lim} OFFSET ${off}
+    `;
     const rows = await sql.query(query, params);
     res.json({ contracts: rows });
   } catch (e) {
@@ -156,6 +163,22 @@ export const removeFileFromContract = async (req, res) => {
     res.json({ message: 'File unlinked from contract', contract: updated[0] });
   } catch (e) {
     console.error('removeFileFromContract error', e);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteContract = async (req, res) => {
+  try {
+    const { user_id, id } = req.body;
+    const user = await getActiveUserOrError(user_id, res); if (!user) return;
+    if (!id) return res.status(400).json({ error: 'id is required' });
+    const rows = await sql`SELECT user_id FROM contracts WHERE id = ${id}`;
+    if (rows.length === 0) return res.status(404).json({ error: 'Contract not found' });
+    if (user.type !== 'admin' && rows[0].user_id !== user_id) return res.status(403).json({ error: 'Access denied' });
+    await sql`DELETE FROM contracts WHERE id = ${id}`;
+    res.json({ message: 'Contract deleted' });
+  } catch (e) {
+    console.error('deleteContract error', e);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -183,6 +183,24 @@ export const deleteNote = async (req, res) => {
     }
 };
 
+export const getNote = async (req, res) => {
+    try {
+        const { user_id, id } = req.body;
+        const user = await getActiveUserOrError(user_id, res);
+        if (!user) return;
+        if (!id) return res.status(400).json({ error: "id is required" });
+        
+        const note = await sql`SELECT * FROM notes WHERE id = ${id}`;
+        if (note.length === 0) return res.status(404).json({ error: "Note not found" });
+        if (user.type !== 'admin' && note[0].user_id !== user_id) return res.status(403).json({ error: "Access denied. Note not owned by user." });
+        
+        res.json(note[0]);
+    } catch (error) {
+        console.error("Error getting note:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 export const listNotes = async (req, res) => {
     try {
         const { user_id, client_id, type, search, limit, offset } = req.body;

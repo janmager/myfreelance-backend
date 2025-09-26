@@ -77,12 +77,51 @@ export const globalSearch = async (req, res) => {
 
         // Notes
         const notes = await sql`
-            SELECT id, title, content, type, client_id, project_id, updated_at
+            SELECT id, title, content, type, client_id, project_id, tags, updated_at
             FROM notes
             WHERE user_id = ${user_id}
               AND (
                 title ILIKE ${like}
                 OR content ILIKE ${like}
+                OR tags::text ILIKE ${like}
+              )
+            ORDER BY updated_at DESC
+            LIMIT ${perTable}
+        `;
+
+        // Contracts
+        const contracts = await sql`
+            SELECT id, name, type, description, status, client_id, project_id, signed_at, updated_at
+            FROM contracts
+            WHERE user_id = ${user_id}
+              AND (
+                name ILIKE ${like}
+                OR type ILIKE ${like}
+                OR description ILIKE ${like}
+              )
+            ORDER BY updated_at DESC
+            LIMIT ${perTable}
+        `;
+
+        // Files
+        const files = await sql`
+            SELECT id, file_name, file_type, file_size, client_id, project_id, file_created_at
+            FROM files
+            WHERE user_id = ${user_id}
+              AND file_name ILIKE ${like}
+            ORDER BY file_created_at DESC
+            LIMIT ${perTable}
+        `;
+
+        // Links
+        const links = await sql`
+            SELECT id, link_url, link_title, link_description, link_type, client_id, project_id, created_at, updated_at
+            FROM links
+            WHERE user_id = ${user_id}
+              AND (
+                link_url ILIKE ${like}
+                OR link_title ILIKE ${like}
+                OR link_description ILIKE ${like}
               )
             ORDER BY updated_at DESC
             LIMIT ${perTable}
@@ -95,6 +134,9 @@ export const globalSearch = async (req, res) => {
                 projects,
                 tasks,
                 notes,
+                contracts,
+                files,
+                links,
             }
         });
     } catch (error) {

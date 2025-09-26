@@ -188,4 +188,31 @@ export const listTasks = async (req, res) => {
     }
 };
 
+export const getUpcomingTasks = async (req, res) => {
+    try {
+        const { user_id, days_ahead = 3 } = req.body;
+
+        const user = await getActiveUserOrError(user_id, res);
+        if (!user) return;
+
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + parseInt(days_ahead));
+
+        const tasks = await sql`
+            SELECT * FROM tasks
+            WHERE user_id = ${user_id}
+              AND deadline_at IS NOT NULL
+              AND deadline_at <= ${endDate.toISOString()}
+              AND status != 'done'
+            ORDER BY deadline_at ASC
+            LIMIT 20
+        `;
+
+        res.json({ tasks });
+    } catch (error) {
+        console.error("Error getting upcoming tasks:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 

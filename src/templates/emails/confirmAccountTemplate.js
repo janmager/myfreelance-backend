@@ -5,7 +5,7 @@ export const confirmAccountEmailTemplate = (email, email_token, user_id) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Potwierdzenie konta - Typerka</title>
+        <title>Potwierdzenie konta - Freelario</title>
         <style>
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -90,9 +90,9 @@ export const confirmAccountEmailTemplate = (email, email_token, user_id) => {
         <div class="container">
             <div class="header">
                 <div class="logo">
-                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Typerka Logo">
+                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Freelario Logo">
                 </div>
-                <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Witaj w Typerka!</h1>
+                <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Witaj w Freelario!</h1>
                 <p style="margin: 10px 0 0; opacity: 0.9;">Aktywuj swoje konto</p>
             </div>
             
@@ -110,7 +110,7 @@ export const confirmAccountEmailTemplate = (email, email_token, user_id) => {
             </div>
             
             <div class="footer">
-                <p style="margin: 0;">© 2024 Typerka. Wszystkie prawa zastrzeżone.</p>
+                <p style="margin: 0;">© 2024 Freelario. Wszystkie prawa zastrzeżone.</p>
             </div>
         </div>
     </body>
@@ -120,12 +120,12 @@ export const confirmAccountEmailTemplate = (email, email_token, user_id) => {
 
 export const confirmAccountEmailTextTemplate = (email, email_token, user_id) => {
     return `
-Witaj w Typerka!
+Witaj w Freelario!
 
 Dziękujemy za rejestrację! Aby aktywować konto, kliknij link:
 
 ${process.env.HOST}/confirm-account?user_id=${user_id}&email_token=${email_token}
 
-© 2024 Typerka. Wszystkie prawa zastrzeżone.
+© 2024 Freelario. Wszystkie prawa zastrzeżone.
     `;
 };

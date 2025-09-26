@@ -19,6 +19,7 @@ import searchRoutes from "./routes/searchRoutes.js";
 import { wakeupJob } from "./config/cron.js";
 import filesRoutes from "./routes/filesRoutes.js";
 import contractsRoutes from "./routes/contractsRoutes.js";
+import linksRoutes from "./routes/linksRoutes.js";
 dotenv.config();
 //
 const app = express();
@@ -58,6 +59,7 @@ app.use("/api/projects", projectsRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/files", filesRoutes);
 app.use("/api/contracts", contractsRoutes);
+app.use("/api/links", linksRoutes);
 
 
 // Log all routes
@@ -72,6 +74,7 @@ console.log('  - /api/projects - Projects management');
 console.log('  - /api/search - Global search');
 console.log('  - /api/files - Files management');
 console.log('  - /api/contracts - Contracts management');
+console.log('  - /api/links - Links management');
 
 app.get("/api/health", (req, res) => {
     res.send("API is working fine.");

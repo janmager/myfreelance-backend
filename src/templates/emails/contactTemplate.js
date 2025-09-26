@@ -5,7 +5,7 @@ export const contactEmailTemplate = (email_sender, title, content, timestamp) =>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Wiadomość kontaktowa - Typerka</title>
+        <title>Wiadomość kontaktowa - Freelario</title>
         <style>
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -88,7 +88,7 @@ export const contactEmailTemplate = (email_sender, title, content, timestamp) =>
         <div class="container">
             <div class="header">
                 <div class="logo">
-                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Typerka Logo">
+                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Freelario Logo">
                 </div>
                 <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Nowa wiadomość</h1>
                 <p style="margin: 10px 0 0; opacity: 0.9;">Formularz kontaktowy</p>
@@ -110,7 +110,7 @@ export const contactEmailTemplate = (email_sender, title, content, timestamp) =>
             </div>
             
             <div class="footer">
-                <p style="margin: 0;">© 2024 Typerka. Wszystkie prawa zastrzeżone.</p>
+                <p style="margin: 0;">© 2024 Freelario. Wszystkie prawa zastrzeżone.</p>
             </div>
         </div>
     </body>
@@ -131,6 +131,6 @@ ${content}
 
 Odpowiedz: ${email_sender}
 
-© 2024 Typerka. Wszystkie prawa zastrzeżone.
+© 2024 Freelario. Wszystkie prawa zastrzeżone.
     `;
 };

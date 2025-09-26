@@ -136,7 +136,7 @@ export async function sendConfirmAccountEmail(req, res) {
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email_receiver,
-            subject: `Potwierdzenie konta - Typerka | ${new Date().toLocaleString()}`,
+            subject: `Potwierdzenie konta - Freelario | ${new Date().toLocaleString()}`,
             html: confirmAccountEmailTemplate(email_receiver, email_token, user_id),
             text: confirmAccountEmailTextTemplate(email_receiver, email_token, user_id)
         };
@@ -186,7 +186,7 @@ export async function sendConfirmAccountEmailInternal(user_id, email_token, emai
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email_receiver,
-            subject: `Potwierdzenie konta - Typerka`,
+            subject: `Potwierdzenie konta - Freelario`,
             html: confirmAccountEmailTemplate(email_receiver, email_token, user_id),
             text: confirmAccountEmailTextTemplate(email_receiver, email_token, user_id)
         };
@@ -249,7 +249,7 @@ export async function sendNewPasswordEmail(req, res) {
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email_receiver,
-            subject: `Nowe hasło - Typerka | ${new Date().toLocaleString()}`,
+            subject: `Nowe hasło - Freelario | ${new Date().toLocaleString()}`,
             html: newPasswordEmailTemplate(email_receiver, new_password),
             text: newPasswordEmailTextTemplate(email_receiver, new_password)
         };
@@ -314,7 +314,7 @@ export async function sendRequestPasswordResetEmail(req, res) {
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email_receiver,
-            subject: `Reset hasła - Typerka | ${new Date().toLocaleString()}`,
+            subject: `Reset hasła - Freelario | ${new Date().toLocaleString()}`,
             html: requestPasswordResetEmailTemplate(email_receiver, user_id, email_token),
             text: requestPasswordResetEmailTextTemplate(email_receiver, user_id, email_token)
         };
@@ -364,7 +364,7 @@ export async function sendRequestPasswordResetEmailInternal(email_receiver, user
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email_receiver,
-            subject: `Reset hasła - Typerka`,
+            subject: `Reset hasła - Freelario`,
             html: requestPasswordResetEmailTemplate(email_receiver, user_id, email_token),
             text: requestPasswordResetEmailTextTemplate(email_receiver, user_id, email_token)
         };
@@ -427,7 +427,7 @@ export async function sendPasswordChangedEmail(req, res) {
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email_receiver,
-            subject: `Hasło zostało zmienione - Typerka | ${new Date().toLocaleString()}`,
+            subject: `Hasło zostało zmienione - Freelario | ${new Date().toLocaleString()}`,
             html: passwordChangedEmailTemplate(email_receiver),
             text: passwordChangedEmailTextTemplate(email_receiver)
         };
@@ -477,7 +477,7 @@ export async function sendPasswordChangedEmailInternal(email_receiver) {
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email_receiver,
-            subject: `Hasło zostało zmienione - Typerka`,
+            subject: `Hasło zostało zmienione - Freelario`,
             html: passwordChangedEmailTemplate(email_receiver),
             text: passwordChangedEmailTextTemplate(email_receiver)
         };

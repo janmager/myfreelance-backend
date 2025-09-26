@@ -5,6 +5,7 @@ import {
   archiveClient,
   addClient,
   editClient,
+  deleteClient,
 } from '../controllers/clientsController.js';
 
 const router = express.Router();
@@ -15,6 +16,7 @@ router.post('/list', getClientsByUserId);
 router.put('/archive', archiveClient);
 router.post('/add', addClient);
 router.put('/edit', editClient);
+router.delete('/delete', deleteClient);
 
 export default router;
 

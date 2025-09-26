@@ -5,7 +5,7 @@ export const requestPasswordResetEmailTemplate = (email_receiver, user_id, email
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Reset hasła - Typerka</title>
+        <title>Reset hasła - Freelario</title>
         <style>
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -99,7 +99,7 @@ export const requestPasswordResetEmailTemplate = (email_receiver, user_id, email
         <div class="container">
             <div class="header">
                 <div class="logo">
-                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Typerka Logo">
+                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Freelario Logo">
                 </div>
                 <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Reset hasła</h1>
                 <p style="margin: 10px 0 0; opacity: 0.9;">Odzyskaj dostęp do konta</p>
@@ -123,7 +123,7 @@ export const requestPasswordResetEmailTemplate = (email_receiver, user_id, email
             </div>
             
             <div class="footer">
-                <p style="margin: 0;">© 2024 Typerka. Wszystkie prawa zastrzeżone.</p>
+                <p style="margin: 0;">© 2024 Freelario. Wszystkie prawa zastrzeżone.</p>
             </div>
         </div>
     </body>
@@ -133,7 +133,7 @@ export const requestPasswordResetEmailTemplate = (email_receiver, user_id, email
 
 export const requestPasswordResetEmailTextTemplate = (email_receiver, user_id, email_token) => {
     return `
-Reset hasła - Typerka
+Reset hasła - Freelario
 
 Otrzymałeś prośbę o zresetowanie hasła. Kliknij link:
 
@@ -141,6 +141,6 @@ ${process.env.API_URL}/api/users/resetPassword?user_id=${user_id}&email_token=${
 
 Link jest ważny 24h. Jeśli nie prosiłeś o reset, zignoruj ten email.
 
-© 2024 Typerka. Wszystkie prawa zastrzeżone.
+© 2024 Freelario. Wszystkie prawa zastrzeżone.
     `;
 };

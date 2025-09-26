@@ -69,7 +69,7 @@ export async function initializeDatabase() {
                 name TEXT NOT NULL,
                 type TEXT CHECK (type IN ('client','private')) NOT NULL DEFAULT 'private',
                 description TEXT,
-                status TEXT CHECK (status IN ('active','inactive','archived')) NOT NULL DEFAULT 'active',
+                status TEXT CHECK (status IN ('draft','in_progress','active', 'completed', 'cancelled')) NOT NULL DEFAULT 'active',
                 start_date DATE,
                 end_date DATE,
                 icon TEXT DEFAULT '',
@@ -158,6 +158,50 @@ export async function initializeDatabase() {
         `;
         // Ensure extended statuses
         try { await sql`ALTER TABLE contracts ADD CONSTRAINT contracts_status_check CHECK (status IN ('draft','to_sign','active','archived','cancelled'))`; } catch (e) {}
+        
+        // Links table
+        await sql`
+            CREATE TABLE IF NOT EXISTS links (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                link_url TEXT NOT NULL,
+                client_id TEXT REFERENCES clients(client_id) ON DELETE CASCADE,
+                project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+                link_title TEXT,
+                link_description TEXT,
+                link_type TEXT DEFAULT 'general',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        `;
+
+        // Create indexes for better performance
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_links_user_id ON links(user_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_links_client_id ON links(client_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_links_project_id ON links(project_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_links_created_at ON links(created_at)`; } catch (e) {}
+
+        // Create trigger to automatically update updated_at
+        try {
+            await sql`
+                CREATE OR REPLACE FUNCTION update_links_updated_at()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = NOW();
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql
+            `;
+        } catch (e) {}
+
+        try {
+            await sql`
+                CREATE TRIGGER trigger_update_links_updated_at
+                    BEFORE UPDATE ON links
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_links_updated_at()
+            `;
+        } catch (e) {}
         
     } catch (error) {
         console.error('Error initializing database:', error);
