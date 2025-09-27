@@ -22,13 +22,10 @@ import contractsRoutes from "./routes/contractsRoutes.js";
 import linksRoutes from "./routes/linksRoutes.js";
 import limitsRoutes from "./routes/limitsRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
-import { lemonSqueezyWebhook } from "./controllers/webhookController.js";
 dotenv.config();
 //
 const app = express();
 
-// Lemon Squeezy webhook endpoint (must be before other middleware for raw body parsing)
-app.post('/api/subscription/webhook', express.raw({ type: 'application/json' }), lemonSqueezyWebhook);
 
 // middleware
 app.use(cors());

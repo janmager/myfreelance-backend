@@ -1,42 +1,24 @@
-import { lemonSqueezySetup, createCheckout, getSubscription } from '@lemonsqueezy/lemonsqueezy.js';
+import Stripe from 'stripe';
 
-// Initialize Lemon Squeezy
-export const lemonSqueezy = lemonSqueezySetup({
-  apiKey: process.env.LEMONSQUEEZY_API_KEY,
-  onError: (error) => console.error('Lemon Squeezy Error:', error),
+// Initialize Stripe
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2024-06-20',
 });
 
-// Export individual functions for easier use
-export { createCheckout, getSubscription };
-
 // Configuration
-export const LEMONSQUEEZY_CONFIG = {
-  // Store ID from Lemon Squeezy dashboard
-  STORE_ID: process.env.LEMONSQUEEZY_STORE_ID,
-  
-  // Product variants for different subscription tiers
-  PRODUCT_VARIANTS: {
-    premium: process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID, // Monthly premium subscription
-    gold: process.env.LEMONSQUEEZY_GOLD_VARIANT_ID, // Monthly gold subscription
+export const STRIPE_CONFIG = {
+  // Product IDs for different subscription tiers
+  PRODUCTS: {
+    premium: process.env.STRIPE_PREMIUM_PRICE_ID,
+    gold: process.env.STRIPE_GOLD_PRICE_ID,
   },
   
   // Webhook secret for verifying webhook requests
-  WEBHOOK_SECRET: process.env.LEMONSQUEEZY_WEBHOOK_SECRET,
+  WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   
   // URLs for checkout success and cancel
   SUCCESS_URL: process.env.NEXT_PUBLIC_APP_URL + '/panel/profile/subscription?status=success',
   CANCEL_URL: process.env.NEXT_PUBLIC_APP_URL + '/panel/premium',
-  
-  // Checkout settings
-  CHECKOUT_SETTINGS: {
-    theme: 'light',
-    logo: process.env.NEXT_PUBLIC_APP_URL + '/assets/brand/logo.png',
-    desc: 'Unlock premium features and increase your limits',
-    discount: true,
-    dark: false,
-    subscription_preview: true,
-    button_color: '#3B82F6',
-  }
 };
 
 // Product configuration for different subscription tiers
@@ -48,7 +30,7 @@ export const getProductConfig = (productName) => {
         description: 'Unlock premium features with increased limits',
         price: 19.00,
         currency: 'PLN',
-        variantId: LEMONSQUEEZY_CONFIG.PRODUCT_VARIANTS.premium,
+        priceId: STRIPE_CONFIG.PRODUCTS.premium,
         premiumLevel: 1,
         limits: {
           clients: 100,
@@ -66,7 +48,7 @@ export const getProductConfig = (productName) => {
         description: 'Maximum limits and exclusive features',
         price: 49.00,
         currency: 'PLN',
-        variantId: LEMONSQUEEZY_CONFIG.PRODUCT_VARIANTS.gold,
+        priceId: STRIPE_CONFIG.PRODUCTS.gold,
         premiumLevel: 2,
         limits: {
           clients: 500,
@@ -83,4 +65,4 @@ export const getProductConfig = (productName) => {
   }
 };
 
-export default lemonSqueezy;
+export default stripe;

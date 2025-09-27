@@ -1,5 +1,5 @@
 import { sql } from '../config/db.js';
-import { lemonSqueezy, createCheckout, getSubscription, LEMONSQUEEZY_CONFIG, getProductConfig } from '../config/lemonsqueezy.js';
+import { stripe, STRIPE_CONFIG, getProductConfig } from '../config/stripe.js';
 
 // Create checkout session for subscription
 export async function createSubscriptionCheckout(req, res) {
@@ -45,26 +45,32 @@ export async function createSubscriptionCheckout(req, res) {
       });
     }
 
-    // Create checkout session using new API
-    const checkoutSession = await createCheckout(
-      LEMONSQUEEZY_CONFIG.STORE_ID,
-      productConfig.variantId,
-      {
-        checkoutData: {
-          email: userData.email,
-          name: userData.name,
-          custom: {
-            user_id: user_id,
-            product_name: product_name,
-          },
+    // Create Stripe checkout session
+    const checkoutSession = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: productConfig.priceId,
+          quantity: 1,
         },
-        expiresAt: null,
-        preview: false,
-        testMode: process.env.NODE_ENV !== 'production',
-      }
-    );
+      ],
+      mode: 'subscription',
+      customer_email: userData.email,
+      metadata: {
+        user_id: user_id,
+        product_name: product_name,
+      },
+      success_url: STRIPE_CONFIG.SUCCESS_URL,
+      cancel_url: STRIPE_CONFIG.CANCEL_URL,
+      subscription_data: {
+        metadata: {
+          user_id: user_id,
+          product_name: product_name,
+        },
+      },
+    });
 
-    if (!checkoutSession || !checkoutSession.data) {
+    if (!checkoutSession || !checkoutSession.id) {
       throw new Error('Failed to create checkout session');
     }
 
@@ -73,48 +79,30 @@ export async function createSubscriptionCheckout(req, res) {
       INSERT INTO user_subscriptions (
         user_id,
         product_name,
-        lemon_squeezy_variant_id,
-        lemon_squeezy_checkout_id,
+        stripe_price_id,
+        stripe_checkout_session_id,
         status,
         created_at
       ) VALUES (
         ${user_id},
         ${product_name},
-        ${productConfig.variantId},
-        ${checkoutSession.data?.data?.id || checkoutSession.data?.id || checkoutSession.id},
+        ${productConfig.priceId},
+        ${checkoutSession.id},
         'pending',
         CURRENT_TIMESTAMP
       )
       ON CONFLICT (user_id, product_name) 
       DO UPDATE SET
-        lemon_squeezy_variant_id = EXCLUDED.lemon_squeezy_variant_id,
-        lemon_squeezy_checkout_id = EXCLUDED.lemon_squeezy_checkout_id,
+        stripe_price_id = EXCLUDED.stripe_price_id,
+        stripe_checkout_session_id = EXCLUDED.stripe_checkout_session_id,
         status = EXCLUDED.status,
         updated_at = CURRENT_TIMESTAMP
     `;
 
-    // Extract URL from response - try different possible structures
-    let checkoutUrl = null;
-    if (checkoutSession.data && checkoutSession.data.data && checkoutSession.data.data.attributes && checkoutSession.data.data.attributes.url) {
-      checkoutUrl = checkoutSession.data.data.attributes.url;
-    } else if (checkoutSession.data && checkoutSession.data.attributes && checkoutSession.data.attributes.url) {
-      checkoutUrl = checkoutSession.data.attributes.url;
-    } else if (checkoutSession.url) {
-      checkoutUrl = checkoutSession.url;
-    } else if (checkoutSession.checkout_url) {
-      checkoutUrl = checkoutSession.checkout_url;
-    } else if (checkoutSession.data && checkoutSession.data.url) {
-      checkoutUrl = checkoutSession.data.url;
-    }
-
-    if (!checkoutUrl) {
-      throw new Error('No checkout URL found in response');
-    }
-
     res.status(200).json({
       response: true,
-      checkout_url: checkoutUrl,
-      checkout_id: checkoutSession.data?.data?.id || checkoutSession.data?.id || checkoutSession.id,
+      checkout_url: checkoutSession.url,
+      checkout_id: checkoutSession.id,
     });
 
   } catch (error) {
@@ -162,9 +150,9 @@ export async function getUserSubscription(req, res) {
 
     const sub = subscription[0];
     
-    // Get subscription details from Lemon Squeezy
+    // Get subscription details from Stripe
     try {
-      const lemonSubscription = await getSubscription(sub.lemon_squeezy_subscription_id);
+      const stripeSubscription = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
 
       res.status(200).json({
         response: true,
@@ -175,12 +163,12 @@ export async function getUserSubscription(req, res) {
           premium_level: sub.premium_level,
           created_at: sub.created_at,
           expires_at: sub.expires_at,
-          lemon_squeezy_subscription_id: sub.lemon_squeezy_subscription_id,
-          lemon_squeezy_data: lemonSubscription.data?.attributes || null,
+          stripe_subscription_id: sub.stripe_subscription_id,
+          stripe_data: stripeSubscription || null,
         }
       });
-    } catch (lemonError) {
-      console.error('Error fetching Lemon Squeezy subscription:', lemonError);
+    } catch (stripeError) {
+      console.error('Error fetching Stripe subscription:', stripeError);
       res.status(200).json({
         response: true,
         subscription: {
@@ -190,8 +178,8 @@ export async function getUserSubscription(req, res) {
           premium_level: sub.premium_level,
           created_at: sub.created_at,
           expires_at: sub.expires_at,
-          lemon_squeezy_subscription_id: sub.lemon_squeezy_subscription_id,
-          lemon_squeezy_data: null,
+          stripe_subscription_id: sub.stripe_subscription_id,
+          stripe_data: null,
         }
       });
     }
@@ -234,18 +222,14 @@ export async function cancelSubscription(req, res) {
 
     const sub = subscription[0];
 
-    // Cancel subscription in Lemon Squeezy
+    // Cancel subscription in Stripe
     try {
-      await lemonSqueezy.updateSubscription({
-        id: sub.lemon_squeezy_subscription_id,
-        data: {
-          cancelled: true,
-          cancelReason: 'Customer requested cancellation'
-        }
+      await stripe.subscriptions.update(sub.stripe_subscription_id, {
+        cancel_at_period_end: true,
       });
-    } catch (lemonError) {
-      console.error('Error canceling Lemon Squeezy subscription:', lemonError);
-      // Continue with local cancellation even if Lemon Squeezy fails
+    } catch (stripeError) {
+      console.error('Error canceling Stripe subscription:', stripeError);
+      // Continue with local cancellation even if Stripe fails
     }
 
     // Update subscription status in database
@@ -315,7 +299,7 @@ export async function getUserPremiumStatus(req, res) {
         product_name,
         status,
         expires_at,
-        lemon_squeezy_subscription_id
+        stripe_subscription_id
       FROM user_subscriptions 
       WHERE user_id = ${user_id}
       AND status IN ('active', 'cancelled')
@@ -328,16 +312,16 @@ export async function getUserPremiumStatus(req, res) {
       const sub = subscriptionData[0];
       
       try {
-        // Get subscription details from Lemon Squeezy if active
-        if (sub.status === 'active' && sub.lemon_squeezy_subscription_id) {
-          const lemonSubscription = await getSubscription(sub.lemon_squeezy_subscription_id);
+        // Get subscription details from Stripe if active
+        if (sub.status === 'active' && sub.stripe_subscription_id) {
+          const stripeSubscription = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
           
           subscription = {
             id: sub.subscription_id,
             status: sub.status,
             product_name: sub.product_name,
             expires_at: sub.expires_at,
-            lemon_squeezy_data: lemonSubscription.data?.attributes || null
+            stripe_data: stripeSubscription || null
           };
         } else {
           subscription = {
@@ -345,17 +329,17 @@ export async function getUserPremiumStatus(req, res) {
             status: sub.status,
             product_name: sub.product_name,
             expires_at: sub.expires_at,
-            lemon_squeezy_data: null
+            stripe_data: null
           };
         }
-      } catch (lemonError) {
-        console.error('Error fetching subscription from Lemon Squeezy:', lemonError);
+      } catch (stripeError) {
+        console.error('Error fetching subscription from Stripe:', stripeError);
         subscription = {
           id: sub.subscription_id,
           status: sub.status,
           product_name: sub.product_name,
           expires_at: sub.expires_at,
-          lemon_squeezy_data: null
+          stripe_data: null
         };
       }
     }
