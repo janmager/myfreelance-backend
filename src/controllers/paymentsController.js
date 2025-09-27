@@ -1,5 +1,5 @@
 import { sql } from '../config/db.js';
-import { stripe, STRIPE_CONFIG, getProductConfig } from '../config/stripe.js';
+import { stripe, STRIPE_CONFIG, getProductConfig, getOrCreatePriceId } from '../config/stripe.js';
 
 // Create Stripe checkout session
 export async function createCheckoutSession(req, res) {
@@ -13,8 +13,11 @@ export async function createCheckoutSession(req, res) {
       });
     }
 
-    // Validate product name
+    // Validate product name and get/create price ID
     const productConfig = getProductConfig(product_name);
+    console.log(`🔍 Getting price ID for product: ${product_name}`);
+    const priceId = await getOrCreatePriceId(product_name);
+    console.log(`✅ Using price ID: ${priceId}`);
     
     // Get user data
     const user = await sql`
@@ -63,7 +66,7 @@ export async function createCheckoutSession(req, res) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: productConfig.stripePriceId,
+          price: priceId,
           quantity: 1,
         },
       ],

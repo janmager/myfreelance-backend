@@ -33,9 +33,9 @@ export const STRIPE_CONFIG = {
   // Webhook configuration
   WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   
-  // Success/Error URLs
-  SUCCESS_URL: process.env.STRIPE_SUCCESS_URL || 'http://localhost:3000/panel/profile/payments/status/success',
-  CANCEL_URL: process.env.STRIPE_CANCEL_URL || 'http://localhost:3000/panel/profile/payments/status/error',
+  // Success/Error URLs (with i18n prefix)
+  SUCCESS_URL: process.env.STRIPE_SUCCESS_URL || 'http://localhost:3000/pl/panel/profile/payments/status/success',
+  CANCEL_URL: process.env.STRIPE_CANCEL_URL || 'http://localhost:3000/pl/panel/profile/payments/status/error',
 };
 
 // Helper function to get product config by name
@@ -45,6 +45,50 @@ export const getProductConfig = (productName) => {
     throw new Error(`Unknown product: ${productName}`);
   }
   return config;
+};
+
+// Helper function to get or create price ID
+export const getOrCreatePriceId = async (productName) => {
+  const config = getProductConfig(productName);
+  
+  // If price ID is configured, verify it exists
+  if (config.stripePriceId) {
+    try {
+      // Try to retrieve the price to verify it exists
+      await stripe.prices.retrieve(config.stripePriceId);
+      console.log(`✅ Using existing price ID: ${config.stripePriceId}`);
+      return config.stripePriceId;
+    } catch (error) {
+      console.log(`❌ Price ID ${config.stripePriceId} not found, creating new one...`);
+      // Price doesn't exist, continue to create new one
+    }
+  }
+  
+  // Create product and price if they don't exist
+  try {
+    // Create product
+    const product = await stripe.products.create({
+      name: config.name,
+      description: config.description,
+    });
+    
+    // Create price
+    const price = await stripe.prices.create({
+      unit_amount: config.price,
+      currency: config.currency,
+      recurring: {
+        interval: config.interval,
+      },
+      product: product.id,
+    });
+    
+    console.log(`✅ Created ${productName} product and price:`, price.id);
+    return price.id;
+    
+  } catch (error) {
+    console.error(`❌ Error creating ${productName} product/price:`, error);
+    throw error;
+  }
 };
 
 // Helper function to format amount for display

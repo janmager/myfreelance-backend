@@ -22,9 +22,14 @@ import contractsRoutes from "./routes/contractsRoutes.js";
 import linksRoutes from "./routes/linksRoutes.js";
 import limitsRoutes from "./routes/limitsRoutes.js";
 import paymentsRoutes from "./routes/paymentsRoutes.js";
+import { initializeStripeProducts } from "./utils/stripeInit.js";
+import { stripeWebhook } from "./controllers/webhookController.js";
 dotenv.config();
 //
 const app = express();
+
+// Stripe webhook endpoint (must be before all other middleware)
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 
 // middleware
 app.use(cors());
@@ -49,6 +54,17 @@ initializeDatabase().then(() => {
 }).catch(error => {
     console.error('❌ [DATABASE] Failed to initialize database:', error);
 });
+
+// Initialize Stripe products (only if STRIPE_SECRET_KEY is set)
+if (process.env.STRIPE_SECRET_KEY) {
+    initializeStripeProducts().then(() => {
+        console.log('✅ [STRIPE] Products initialized successfully');
+    }).catch(error => {
+        console.error('❌ [STRIPE] Failed to initialize products:', error);
+    });
+} else {
+    console.log('⚠️  [STRIPE] STRIPE_SECRET_KEY not set, skipping Stripe initialization');
+}
 
 // Routes
 app.use("/api/users", usersRoute);
