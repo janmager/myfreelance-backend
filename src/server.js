@@ -26,6 +26,9 @@ dotenv.config();
 //
 const app = express();
 
+// Stripe webhook endpoint (must be before JSON parsing middleware)
+import { stripeWebhook } from "./controllers/stripeWebhookController.js";
+app.post('/api/subscription/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 
 // middleware
 app.use(cors());

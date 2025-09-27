@@ -4,16 +4,16 @@ import { stripe, STRIPE_CONFIG, getProductConfig } from '../config/stripe.js';
 // Stripe webhook handler
 export async function stripeWebhook(req, res) {
   const sig = req.headers['stripe-signature'];
-  const rawBody = req.body;
 
   if (!sig) {
+    console.error('Missing stripe signature');
     return res.status(400).json({ error: 'Missing signature' });
   }
 
   try {
     // Verify webhook signature
     const event = stripe.webhooks.constructEvent(
-      rawBody,
+      req.body,
       sig,
       STRIPE_CONFIG.WEBHOOK_SECRET
     );
