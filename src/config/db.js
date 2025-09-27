@@ -42,7 +42,7 @@ export async function initializeDatabase() {
             CREATE TABLE IF NOT EXISTS clients (
                 client_id TEXT UNIQUE PRIMARY KEY,
                 name TEXT NOT NULL,
-                email TEXT NOT NULL,
+                email TEXT,
                 phone TEXT,
                 address TEXT,
                 city TEXT,
@@ -61,6 +61,9 @@ export async function initializeDatabase() {
 
         try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'personal'`; } catch (e) {}
         try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT ''`; } catch (e) {}
+        
+        // Make email column optional (remove NOT NULL constraint)
+        try { await sql`ALTER TABLE clients ALTER COLUMN email DROP NOT NULL`; } catch (e) {}
         
         // Projects table (ensure created before FKs in other tables)
         await sql`

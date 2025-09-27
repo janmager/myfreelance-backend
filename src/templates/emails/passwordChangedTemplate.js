@@ -24,25 +24,43 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
                 margin: 20px;
             }
             .header {
-                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+                background: linear-gradient(135deg, #3f95ff 0%, #926dff 100%);
                 color: white;
-                padding: 32px 22px;
+                padding: 40px 22px;
                 text-align: center;
+                position: relative;
+                overflow: hidden;
+            }
+            .header::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                animation: float 6s ease-in-out infinite;
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0px) rotate(0deg); }
+                50% { transform: translateY(-20px) rotate(180deg); }
             }
             .logo {
-                width: 80px;
-                height: 80px;
-                margin: 0 auto 15px;
-                background-color: white;
-                border-radius: 50%;
+                width: 90px;
+                height: 90px;
+                margin: 0 auto 20px;
+                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                border-radius: 22px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+                position: relative;
+                z-index: 1;
             }
             .logo img {
-                width: 50px;
-                height: 50px;
+                width: 55px;
+                height: 55px;
                 object-fit: contain;
             }
             .content {
@@ -50,12 +68,13 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
                 text-align: center;
             }
             .success-box {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border: 2px solid #3b82f6;
-                border-radius: 12px;
-                padding: 22px;
-                margin: 22px 0;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                border: 2px solid #22c55e;
+                border-radius: 16px;
+                padding: 28px;
+                margin: 28px 0;
                 text-align: center;
+                box-shadow: 0 8px 32px rgba(34, 197, 94, 0.15);
             }
             .success-icon {
                 font-size: 48px;
@@ -91,10 +110,10 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
         <div class="container">
             <div class="header">
                 <div class="logo">
-                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Freelenzy.com Logo">
+                    <img src="https://freelenzy.vercel.app/assets/brand/logo.png" alt="Freelenzy.com Logo">
                 </div>
-                <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Hasło zmienione</h1>
-                <p style="margin: 10px 0 0; opacity: 0.9;">Potwierdzenie zmiany</p>
+                <h1 style="margin: 0; font-size: 32px; font-weight: 800; position: relative; z-index: 1;">Hasło zmienione</h1>
+                <p style="margin: 12px 0 0; opacity: 0.95; font-size: 18px; position: relative; z-index: 1;">Potwierdzenie zmiany</p>
             </div>
             
             <div class="content">

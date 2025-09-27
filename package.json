@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.1.1",
-  "description": "Freelenzy.com.io Backend API",
+  "description": "Freelenzy.com Backend API",
   "main": "src/server.js",
   "scripts": {
     "dev": "clear && nodemon src/server.js",

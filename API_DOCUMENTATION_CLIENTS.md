@@ -1,7 +1,7 @@
 # Clients API Documentation
 
 ## Overview
-This API provides endpoints for managing clients in the Freelenzy.com.io application. There are two sets of endpoints:
+This API provides endpoints for managing clients in the Freelenzy.com application. There are two sets of endpoints:
 - **Admin endpoints** (`/api/admin/clients/*`) - Require admin privileges
 - **User endpoints** (`/api/clients/*`) - Require user authentication
 
@@ -15,7 +15,7 @@ All endpoints require proper user verification:
 CREATE TABLE clients (
     client_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
     phone VARCHAR(50),
     address TEXT,
     city VARCHAR(100),

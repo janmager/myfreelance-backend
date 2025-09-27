@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS clients (
     client_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
     phone VARCHAR(50),
     address TEXT,
     city VARCHAR(100),

@@ -314,8 +314,8 @@ export const addClient = async (req, res) => {
             type
         } = req.body;
 
-        if (!user_id || !name || !email) {
-            return res.status(400).json({ error: "user_id, name, and email are required" });
+        if (!user_id || !name) {
+            return res.status(400).json({ error: "user_id and name are required" });
         }
 
         // Sprawdź czy user istnieje, jest aktywny i ma odpowiedni typ
@@ -335,13 +335,15 @@ export const addClient = async (req, res) => {
             return res.status(403).json({ error: "Access denied. Invalid user type." });
         }
 
-        // Sprawdź czy email już istnieje dla tego usera
-        const existingClient = await sql`
-            SELECT client_id FROM clients WHERE email = ${email} AND user_id = ${user_id}
-        `;
+        // Sprawdź czy email już istnieje dla tego usera (tylko jeśli email jest podany)
+        if (email && email.trim() !== '') {
+            const existingClient = await sql`
+                SELECT client_id FROM clients WHERE email = ${email} AND user_id = ${user_id}
+            `;
 
-        if (existingClient.length > 0) {
-            return res.status(409).json({ error: "Client with this email already exists" });
+            if (existingClient.length > 0) {
+                return res.status(409).json({ error: "Client with this email already exists" });
+            }
         }
 
         // Stwórz nowego klienta
@@ -351,7 +353,7 @@ export const addClient = async (req, res) => {
                 client_id, name, email, phone, address, city, state, zip, 
                 country, nip, type, user_id, created_at, updated_at
             ) VALUES (
-                ${clientId}, ${name}, ${email}, ${phone || null}, ${address || null}, 
+                ${clientId}, ${name}, ${email || null}, ${phone || null}, ${address || null}, 
                 ${city || null}, ${state || null}, ${zip || null}, 
                 ${country || null}, ${nip || null}, ${type || 'personal'}, ${user_id}, 
                 NOW(), NOW()
@@ -423,8 +425,8 @@ export const editClient = async (req, res) => {
             return res.status(404).json({ error: "Client not found or access denied" });
         }
 
-        // Sprawdź czy email już istnieje dla innego klienta tego usera
-        if (email) {
+        // Sprawdź czy email już istnieje dla innego klienta tego usera (tylko jeśli email jest podany i nie jest pusty)
+        if (email && email.trim() !== '') {
             const emailCheck = await sql`
                 SELECT client_id FROM clients 
                 WHERE email = ${email} AND user_id = ${user_id} AND client_id != ${client_id}
@@ -438,7 +440,7 @@ export const editClient = async (req, res) => {
         // Przygotuj dane do aktualizacji
         const updateData = {};
         if (name !== undefined) updateData.name = name;
-        if (email !== undefined) updateData.email = email;
+        if (email !== undefined) updateData.email = email && email.trim() !== '' ? email : null;
         if (phone !== undefined) updateData.phone = phone;
         if (address !== undefined) updateData.address = address;
         if (city !== undefined) updateData.city = city;
