@@ -21,15 +21,14 @@ import filesRoutes from "./routes/filesRoutes.js";
 import contractsRoutes from "./routes/contractsRoutes.js";
 import linksRoutes from "./routes/linksRoutes.js";
 import limitsRoutes from "./routes/limitsRoutes.js";
-import paymentsRoutes from "./routes/paymentsRoutes.js";
-import { initializeStripeProducts } from "./utils/stripeInit.js";
-import { stripeWebhook } from "./controllers/webhookController.js";
+import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+import { lemonSqueezyWebhook } from "./controllers/webhookController.js";
 dotenv.config();
 //
 const app = express();
 
-// Stripe webhook endpoint (must be before all other middleware)
-app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+// Lemon Squeezy webhook endpoint (must be before other middleware for raw body parsing)
+app.post('/api/subscription/webhook', express.raw({ type: 'application/json' }), lemonSqueezyWebhook);
 
 // middleware
 app.use(cors());
@@ -44,6 +43,7 @@ let test = false;
 // cron jobs
 if (process.env.NODE_ENV === "production" || test) {
     wakeupJob.start();
+    console.log('✅ [CRON] Wakeup job started');
 }
 
 const PORT = process.env.PORT || 5001;
@@ -55,16 +55,6 @@ initializeDatabase().then(() => {
     console.error('❌ [DATABASE] Failed to initialize database:', error);
 });
 
-// Initialize Stripe products (only if STRIPE_SECRET_KEY is set)
-if (process.env.STRIPE_SECRET_KEY) {
-    initializeStripeProducts().then(() => {
-        console.log('✅ [STRIPE] Products initialized successfully');
-    }).catch(error => {
-        console.error('❌ [STRIPE] Failed to initialize products:', error);
-    });
-} else {
-    console.log('⚠️  [STRIPE] STRIPE_SECRET_KEY not set, skipping Stripe initialization');
-}
 
 // Routes
 app.use("/api/users", usersRoute);
@@ -79,8 +69,7 @@ app.use("/api/files", filesRoutes);
 app.use("/api/contracts", contractsRoutes);
 app.use("/api/links", linksRoutes);
 app.use("/api/limits", limitsRoutes);
-app.use("/api/payments", paymentsRoutes);
-
+app.use("/api/subscription", subscriptionRoutes);
 
 // Log all routes
 console.log('📋 [ROUTES] Available API endpoints:');
@@ -96,7 +85,7 @@ console.log('  - /api/files - Files management');
 console.log('  - /api/contracts - Contracts management');
 console.log('  - /api/links - Links management');
 console.log('  - /api/limits - Limits and usage management');
-console.log('  - /api/payments - Payments and subscriptions management');
+console.log('  - /api/subscription - Subscription management');
 
 app.get("/api/health", (req, res) => {
     res.send("API is working fine.");

@@ -235,6 +235,62 @@ export async function initializeDatabase() {
                 ON CONFLICT (name) DO NOTHING
             `;
         } catch (e) {}
+
+        // User subscriptions table for Lemon Squeezy
+        await sql`
+            CREATE TABLE IF NOT EXISTS user_subscriptions (
+                subscription_id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                product_name VARCHAR(100) NOT NULL,
+                lemon_squeezy_variant_id TEXT,
+                lemon_squeezy_checkout_id TEXT,
+                lemon_squeezy_order_id TEXT,
+                lemon_squeezy_subscription_id TEXT,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP,
+                cancelled_at TIMESTAMP,
+                
+                CONSTRAINT fk_user_subscriptions_user_id 
+                    FOREIGN KEY (user_id) 
+                    REFERENCES users(user_id) 
+                    ON DELETE CASCADE,
+                
+                CONSTRAINT unique_user_product_active 
+                    UNIQUE (user_id, product_name)
+            )
+        `;
+
+        // Create indexes for user_subscriptions
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_user_subscriptions_lemon_squeezy_subscription_id ON user_subscriptions(lemon_squeezy_subscription_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_user_subscriptions_lemon_squeezy_checkout_id ON user_subscriptions(lemon_squeezy_checkout_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status ON user_subscriptions(status)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_user_subscriptions_created_at ON user_subscriptions(created_at)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_user_subscriptions_expires_at ON user_subscriptions(expires_at)`; } catch (e) {}
+
+        // Create trigger for user_subscriptions updated_at
+        try {
+            await sql`
+                CREATE OR REPLACE FUNCTION update_user_subscriptions_updated_at()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = CURRENT_TIMESTAMP;
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql
+            `;
+        } catch (e) {}
+
+        try {
+            await sql`
+                CREATE TRIGGER trigger_update_user_subscriptions_updated_at
+                    BEFORE UPDATE ON user_subscriptions
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_user_subscriptions_updated_at()
+            `;
+        } catch (e) {}
         
     } catch (error) {
         console.error('Error initializing database:', error);
