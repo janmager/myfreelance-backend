@@ -56,38 +56,99 @@ async function handleCheckoutSessionCompleted(session) {
   console.log('Processing checkout session completed:', session.id);
   
   try {
-    const { user_id, product_name } = session.metadata;
+    // For Pricing Tables, we need to get customer info and subscription details
+    if (session.customer && session.subscription) {
+      // Get subscription details from Stripe
+      const subscription = await stripe.subscriptions.retrieve(session.subscription);
+      
+      // Determine product name based on subscription items
+      let productName = 'premium'; // default
+      if (subscription.items.data.length > 0) {
+        const priceId = subscription.items.data[0].price.id;
+        // You can map price IDs to product names here
+        // For now, we'll use a simple mapping based on your Stripe setup
+        if (priceId.includes('gold') || priceId.includes('premium_2')) {
+          productName = 'gold';
+        }
+      }
 
-    if (!user_id || !product_name) {
-      console.error('Missing metadata in checkout session:', session.id);
-      return;
+      // Get customer details to find user
+      const customer = await stripe.customers.retrieve(session.customer);
+      const userEmail = customer.email;
+
+      if (!userEmail) {
+        console.error('No email found for customer:', session.customer);
+        return;
+      }
+
+      // Find user by email
+      const user = await sql`
+        SELECT * FROM users WHERE email = ${userEmail}
+      `;
+
+      if (user.length === 0) {
+        console.error('User not found for email:', userEmail);
+        return;
+      }
+
+      const userId = user[0].user_id;
+      const productConfig = getProductConfig(productName);
+
+      // Create or update subscription record
+      await sql`
+        INSERT INTO user_subscriptions (
+          user_id,
+          product_name,
+          stripe_subscription_id,
+          stripe_customer_id,
+          stripe_checkout_session_id,
+          status,
+          current_period_start,
+          current_period_end,
+          expires_at,
+          created_at,
+          updated_at
+        ) VALUES (
+          ${userId},
+          ${productName},
+          ${session.subscription},
+          ${session.customer},
+          ${session.id},
+          ${subscription.status},
+          TO_TIMESTAMP(${subscription.current_period_start}),
+          TO_TIMESTAMP(${subscription.current_period_end}),
+          TO_TIMESTAMP(${subscription.current_period_end}),
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        ON CONFLICT (user_id, product_name) 
+        DO UPDATE SET
+          stripe_subscription_id = ${session.subscription},
+          stripe_customer_id = ${session.customer},
+          stripe_checkout_session_id = ${session.id},
+          status = ${subscription.status},
+          current_period_start = TO_TIMESTAMP(${subscription.current_period_start}),
+          current_period_end = TO_TIMESTAMP(${subscription.current_period_end}),
+          expires_at = TO_TIMESTAMP(${subscription.current_period_end}),
+          updated_at = CURRENT_TIMESTAMP
+      `;
+
+      // Update user premium level
+      let newPremiumLevel = 0;
+      if (subscription.status === 'active') {
+        newPremiumLevel = productConfig.premiumLevel;
+      }
+
+      await sql`
+        UPDATE users 
+        SET 
+          premium_level = ${newPremiumLevel},
+          updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ${userId}
+      `;
+
+      console.log(`Updated user ${userId} to premium level ${newPremiumLevel} for product ${productName}`);
     }
-
-    // Get product configuration
-    const productConfig = getProductConfig(product_name);
-
-    // Update subscription record with customer ID
-    await sql`
-      UPDATE user_subscriptions 
-      SET 
-        stripe_customer_id = ${session.customer},
-        status = 'active',
-        updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = ${user_id} 
-      AND product_name = ${product_name}
-      AND stripe_checkout_session_id = ${session.id}
-    `;
-
-    // Update user premium level
-    await sql`
-      UPDATE users 
-      SET 
-        premium_level = ${productConfig.premiumLevel},
-        updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = ${user_id}
-    `;
-
-    console.log(`Updated user ${user_id} to premium level ${productConfig.premiumLevel}`);
   } catch (error) {
     console.error('Error handling checkout session completed:', error);
   }

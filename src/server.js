@@ -16,7 +16,7 @@ import notesRoutes from "./routes/notesRoutes.js";
 import tasksRoutes from "./routes/tasksRoutes.js";
 import projectsRoutes from "./routes/projectsRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
-import { wakeupJob } from "./config/cron.js";
+import { wakeupJob, subscriptionCheckJob } from "./config/cron.js";
 import filesRoutes from "./routes/filesRoutes.js";
 import contractsRoutes from "./routes/contractsRoutes.js";
 import linksRoutes from "./routes/linksRoutes.js";
@@ -40,7 +40,9 @@ let test = false;
 // cron jobs
 if (process.env.NODE_ENV === "production" || test) {
     wakeupJob.start();
+    subscriptionCheckJob.start();
     console.log('✅ [CRON] Wakeup job started');
+    console.log('✅ [CRON] Subscription check job started');
 }
 
 const PORT = process.env.PORT || 5001;
