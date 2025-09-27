@@ -5,7 +5,7 @@ export const newPasswordEmailTemplate = (email_receiver, new_password) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nowe hasło - Freelario</title>
+        <title>Nowe hasło - Freelenzy.com</title>
         <style>
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -92,14 +92,14 @@ export const newPasswordEmailTemplate = (email_receiver, new_password) => {
         <div class="container">
             <div class="header">
                 <div class="logo">
-                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Freelario Logo">
+                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Freelenzy.com Logo">
                 </div>
                 <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Nowe hasło</h1>
                 <p style="margin: 10px 0 0; opacity: 0.9;">Twoje dane logowania</p>
             </div>
             
             <div class="content">
-                <p style="font-size: 18px; margin-bottom: 25px;">Oto Twoje nowe hasło do konta Freelario:</p>
+                <p style="font-size: 18px; margin-bottom: 25px;">Oto Twoje nowe hasło do konta Freelenzy.com:</p>
                 
                 <div class="password-box">
                     <h3 style="color: #efb414; margin-bottom: 15px;">Twoje hasło:</h3>
@@ -116,7 +116,7 @@ export const newPasswordEmailTemplate = (email_receiver, new_password) => {
             </div>
             
             <div class="footer">
-                <p style="margin: 0;">© 2024 Freelario. Wszystkie prawa zastrzeżone.</p>
+                <p style="margin: 0;">© 2024 Freelenzy.com. Wszystkie prawa zastrzeżone.</p>
             </div>
         </div>
     </body>
@@ -126,13 +126,13 @@ export const newPasswordEmailTemplate = (email_receiver, new_password) => {
 
 export const newPasswordEmailTextTemplate = (email_receiver, new_password) => {
     return `
-Nowe hasło - Freelario
+Nowe hasło - Freelenzy.com
 
 Twoje nowe hasło: ${new_password}
 Email: ${email_receiver}
 
 WAŻNE: Zmień to hasło po pierwszym zalogowaniu.
 
-© 2024 Freelario. Wszystkie prawa zastrzeżone.
+© 2024 Freelenzy.com. Wszystkie prawa zastrzeżone.
     `;
 };

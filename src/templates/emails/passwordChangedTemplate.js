@@ -5,7 +5,7 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Hasło zostało zmienione - Freelario</title>
+        <title>Hasło zostało zmienione - Freelenzy.com</title>
         <style>
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -91,7 +91,7 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
         <div class="container">
             <div class="header">
                 <div class="logo">
-                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Freelario Logo">
+                    <img src="https://typerka-2026.vercel.app/assets/brand/logo.png" alt="Freelenzy.com Logo">
                 </div>
                 <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Hasło zmienione</h1>
                 <p style="margin: 10px 0 0; opacity: 0.9;">Potwierdzenie zmiany</p>
@@ -115,7 +115,7 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
             </div>
             
             <div class="footer">
-                <p style="margin: 0;">© 2024 Freelario. Wszystkie prawa zastrzeżone.</p>
+                <p style="margin: 0;">© 2024 Freelenzy.com. Wszystkie prawa zastrzeżone.</p>
             </div>
         </div>
     </body>
@@ -125,7 +125,7 @@ export const passwordChangedEmailTemplate = (email_receiver) => {
 
 export const passwordChangedEmailTextTemplate = (email_receiver) => {
     return `
-Hasło zostało zmienione - Freelario
+Hasło zostało zmienione - Freelenzy.com
 
 ✅ Twoje hasło zostało pomyślnie zmienione!
 
@@ -134,6 +134,6 @@ Data: ${new Date().toLocaleString('pl-PL')}
 
 ⚠️ Jeśli to nie Ty zmieniłeś hasło, natychmiast skontaktuj się z nami.
 
-© 2024 Freelario. Wszystkie prawa zastrzeżone.
+© 2024 Freelenzy.com. Wszystkie prawa zastrzeżone.
     `;
 };

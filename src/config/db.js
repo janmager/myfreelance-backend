@@ -29,12 +29,14 @@ export async function initializeDatabase() {
                 updated_at TIMESTAMP DEFAULT (NOW() + INTERVAL '2 hours' + INTERVAL '2 hours'),
                 logged_at TIMESTAMP DEFAULT NULL,
                 push_notifications BOOLEAN DEFAULT TRUE,
-                avatar TEXT DEFAULT '👤'
+                avatar TEXT DEFAULT '👤',
+                premium_level INTEGER DEFAULT 0
             )
         `;
 
         // Ensure new columns exist
         try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'pl'`; } catch (e) {}
+        try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_level INTEGER DEFAULT 0`; } catch (e) {}
         
         await sql`
             CREATE TABLE IF NOT EXISTS clients (
@@ -200,6 +202,37 @@ export async function initializeDatabase() {
                     BEFORE UPDATE ON links
                     FOR EACH ROW
                     EXECUTE FUNCTION update_links_updated_at()
+            `;
+        } catch (e) {}
+
+        // Limits table
+        await sql`
+            CREATE TABLE IF NOT EXISTS limits (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                premium_level_0 INTEGER NOT NULL DEFAULT 0,
+                premium_level_1 INTEGER NOT NULL DEFAULT 0,
+                premium_level_2 INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '2 hours'),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '2 hours')
+            )
+        `;
+
+        // Add indexes for better performance
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_limits_name ON limits(name)`; } catch (e) {}
+
+        // Insert default limits
+        try {
+            await sql`
+                INSERT INTO limits (name, premium_level_0, premium_level_1, premium_level_2) VALUES
+                ('clients', 10, 50, 100),
+                ('projects', 5, 25, 100),
+                ('notes', 20, 100, 500),
+                ('contracts', 5, 25, 100),
+                ('files_mb', 1024, 5120, 20480),
+                ('links', 10, 50, 200),
+                ('tasks', 50, 250, 1000)
+                ON CONFLICT (name) DO NOTHING
             `;
         } catch (e) {}
         
