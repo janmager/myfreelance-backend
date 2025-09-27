@@ -46,7 +46,7 @@ export const getProductConfig = (productName) => {
       return {
         name: 'Premium Plan',
         description: 'Unlock premium features with increased limits',
-        price: 29.00,
+        price: 19.00,
         currency: 'PLN',
         variantId: LEMONSQUEEZY_CONFIG.PRODUCT_VARIANTS.premium,
         premiumLevel: 1,

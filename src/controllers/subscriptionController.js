@@ -31,14 +31,14 @@ export async function createSubscriptionCheckout(req, res) {
     const userData = user[0];
 
     // Check if user already has an active subscription for this product
-    const existingSubscription = await sql`
+    const existingActiveSubscription = await sql`
       SELECT * FROM user_subscriptions 
       WHERE user_id = ${user_id} 
       AND product_name = ${product_name}
-      AND status IN ('active', 'pending')
+      AND status = 'active'
     `;
 
-    if (existingSubscription.length > 0) {
+    if (existingActiveSubscription.length > 0) {
       return res.status(400).json({
         response: false,
         message: `Masz już aktywną subskrypcję ${product_name}. Przejdź do panelu subskrypcji, aby zarządzać swoim planem.`
@@ -68,7 +68,7 @@ export async function createSubscriptionCheckout(req, res) {
       throw new Error('Failed to create checkout session');
     }
 
-    // Save pending subscription record
+    // Save or update pending subscription record
     await sql`
       INSERT INTO user_subscriptions (
         user_id,
@@ -81,10 +81,16 @@ export async function createSubscriptionCheckout(req, res) {
         ${user_id},
         ${product_name},
         ${productConfig.variantId},
-        ${checkoutSession.data.id},
+        ${checkoutSession.data?.data?.id || checkoutSession.data?.id || checkoutSession.id},
         'pending',
         CURRENT_TIMESTAMP
       )
+      ON CONFLICT (user_id, product_name) 
+      DO UPDATE SET
+        lemon_squeezy_variant_id = EXCLUDED.lemon_squeezy_variant_id,
+        lemon_squeezy_checkout_id = EXCLUDED.lemon_squeezy_checkout_id,
+        status = EXCLUDED.status,
+        updated_at = CURRENT_TIMESTAMP
     `;
 
     // Extract URL from response - try different possible structures
