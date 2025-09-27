@@ -177,3 +177,238 @@ export async function getUserPremiumStatus(req, res) {
     });
   }
 }
+
+// Cancel subscription (cancel at period end)
+export async function cancelSubscription(req, res) {
+  try {
+    const { user_id } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({
+        response: false,
+        message: 'user_id jest wymagane'
+      });
+    }
+
+    // Get user's active subscription
+    const subscription = await sql`
+      SELECT * FROM user_subscriptions 
+      WHERE user_id = ${user_id} 
+      AND status = 'active'
+      AND stripe_subscription_id IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    if (subscription.length === 0) {
+      return res.status(404).json({
+        response: false,
+        message: 'Nie znaleziono aktywnej subskrypcji'
+      });
+    }
+
+    const sub = subscription[0];
+
+    // Cancel subscription in Stripe (cancel at period end)
+    try {
+      await stripe.subscriptions.update(sub.stripe_subscription_id, {
+        cancel_at_period_end: true,
+      });
+
+      // Update local status
+      await sql`
+        UPDATE user_subscriptions 
+        SET 
+          status = 'cancelled_at_period_end',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE subscription_id = ${sub.subscription_id}
+      `;
+
+      res.status(200).json({
+        response: true,
+        message: 'Subskrypcja została zaplanowana do anulowania na koniec bieżącego okresu rozliczeniowego'
+      });
+
+    } catch (stripeError) {
+      console.error('Error canceling Stripe subscription:', stripeError);
+      res.status(500).json({
+        response: false,
+        message: 'Błąd podczas anulowania subskrypcji w Stripe'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    res.status(500).json({
+      response: false,
+      message: 'Błąd podczas anulowania subskrypcji'
+    });
+  }
+}
+
+// Resume subscription (cancel the cancellation)
+export async function resumeSubscription(req, res) {
+  try {
+    const { user_id } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({
+        response: false,
+        message: 'user_id jest wymagane'
+      });
+    }
+
+    // Get user's active subscription (regardless of local status)
+    const subscription = await sql`
+      SELECT * FROM user_subscriptions 
+      WHERE user_id = ${user_id} 
+      AND status = 'active'
+      AND stripe_subscription_id IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    if (subscription.length === 0) {
+      return res.status(404).json({
+        response: false,
+        message: 'Nie znaleziono aktywnej subskrypcji'
+      });
+    }
+
+    const sub = subscription[0];
+
+    // Check if subscription is actually scheduled for cancellation in Stripe
+    try {
+      const stripeSubscription = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+      
+      if (!stripeSubscription.cancel_at_period_end) {
+        return res.status(400).json({
+          response: false,
+          message: 'Subskrypcja nie jest zaplanowana do anulowania'
+        });
+      }
+
+      // Resume subscription in Stripe
+      await stripe.subscriptions.update(sub.stripe_subscription_id, {
+        cancel_at_period_end: false,
+      });
+
+      // Update local status to ensure it's active
+      await sql`
+        UPDATE user_subscriptions 
+        SET 
+          status = 'active',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE subscription_id = ${sub.subscription_id}
+      `;
+
+      res.status(200).json({
+        response: true,
+        message: 'Subskrypcja została wznowiona pomyślnie'
+      });
+
+    } catch (stripeError) {
+      console.error('Error resuming Stripe subscription:', stripeError);
+      res.status(500).json({
+        response: false,
+        message: 'Błąd podczas wznawiania subskrypcji w Stripe'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error resuming subscription:', error);
+    res.status(500).json({
+      response: false,
+      message: 'Błąd podczas wznawiania subskrypcji'
+    });
+  }
+}
+
+// Get subscription management info
+export async function getSubscriptionManagementInfo(req, res) {
+  try {
+    const { user_id } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({
+        response: false,
+        message: 'user_id jest wymagane'
+      });
+    }
+
+    // Get user's subscription
+    const subscription = await sql`
+      SELECT * FROM user_subscriptions 
+      WHERE user_id = ${user_id} 
+      AND stripe_subscription_id IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    if (subscription.length === 0) {
+      return res.status(404).json({
+        response: false,
+        message: 'Brak subskrypcji'
+      });
+    }
+
+    const sub = subscription[0];
+
+    // Get detailed subscription info from Stripe
+    try {
+      const stripeSubscription = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+      
+      // Use Stripe data for dates if local data is null
+      const expiresAt = sub.expires_at || new Date(stripeSubscription.current_period_end * 1000).toISOString();
+      const currentPeriodStart = sub.current_period_start || new Date(stripeSubscription.current_period_start * 1000).toISOString();
+      const currentPeriodEnd = sub.current_period_end || new Date(stripeSubscription.current_period_end * 1000).toISOString();
+      
+      res.status(200).json({
+        response: true,
+        subscription: {
+          id: sub.subscription_id,
+          product_name: sub.product_name,
+          status: sub.status,
+          created_at: sub.created_at,
+          expires_at: expiresAt,
+          current_period_start: currentPeriodStart,
+          current_period_end: currentPeriodEnd,
+          stripe_subscription_id: sub.stripe_subscription_id,
+          stripe_data: {
+            status: stripeSubscription.status,
+            current_period_start: stripeSubscription.current_period_start,
+            current_period_end: stripeSubscription.current_period_end,
+            cancel_at_period_end: stripeSubscription.cancel_at_period_end,
+            canceled_at: stripeSubscription.canceled_at,
+            trial_start: stripeSubscription.trial_start,
+            trial_end: stripeSubscription.trial_end,
+          }
+        }
+      });
+
+    } catch (stripeError) {
+      console.error('Error fetching Stripe subscription:', stripeError);
+      res.status(200).json({
+        response: true,
+        subscription: {
+          id: sub.subscription_id,
+          product_name: sub.product_name,
+          status: sub.status,
+          created_at: sub.created_at,
+          expires_at: sub.expires_at,
+          current_period_start: sub.current_period_start,
+          current_period_end: sub.current_period_end,
+          stripe_subscription_id: sub.stripe_subscription_id,
+          stripe_data: null
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Error getting subscription management info:', error);
+    res.status(500).json({
+      response: false,
+      message: 'Błąd podczas pobierania informacji o subskrypcji'
+    });
+  }
+}

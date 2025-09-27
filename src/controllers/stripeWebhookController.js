@@ -65,11 +65,24 @@ async function handleCheckoutSessionCompleted(session) {
       let productName = 'premium'; // default
       if (subscription.items.data.length > 0) {
         const priceId = subscription.items.data[0].price.id;
-        // You can map price IDs to product names here
-        // For now, we'll use a simple mapping based on your Stripe setup
-        if (priceId.includes('gold') || priceId.includes('premium_2')) {
+        const priceAmount = subscription.items.data[0].price.unit_amount;
+        
+        console.log('🔍 Processing subscription with Price ID:', priceId, 'Amount:', priceAmount);
+        console.log('🔍 Full price object:', JSON.stringify(subscription.items.data[0].price, null, 2));
+        
+        // Map price IDs to product names based on amount or ID patterns
+        // Gold plan is 49 PLN = 4900 cents
+        if (priceAmount === 4900 || priceId.includes('gold') || priceId.includes('premium_2')) {
           productName = 'gold';
+          console.log('✅ Detected GOLD plan (49 PLN)');
+        } else if (priceAmount === 1900 || priceId.includes('premium')) {
+          productName = 'premium';
+          console.log('✅ Detected PREMIUM plan (19 PLN)');
+        } else {
+          console.log('⚠️  Unknown price amount, defaulting to premium');
         }
+        
+        console.log('🎯 Final mapping result:', productName);
       }
 
       // Get customer details to find user
@@ -93,6 +106,9 @@ async function handleCheckoutSessionCompleted(session) {
 
       const userId = user[0].user_id;
       const productConfig = getProductConfig(productName);
+
+      console.log(`Found user ${userId} (${userEmail}) for subscription ${session.subscription}`);
+      console.log(`Product config for ${productName}:`, productConfig);
 
       // Create or update subscription record
       await sql`
@@ -147,7 +163,7 @@ async function handleCheckoutSessionCompleted(session) {
         WHERE user_id = ${userId}
       `;
 
-      console.log(`Updated user ${userId} to premium level ${newPremiumLevel} for product ${productName}`);
+      console.log(`✅ Successfully updated user ${userId} to premium level ${newPremiumLevel} for product ${productName}`);
     }
   } catch (error) {
     console.error('Error handling checkout session completed:', error);
