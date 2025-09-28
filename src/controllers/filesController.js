@@ -32,6 +32,54 @@ export const addFile = async (req, res) => {
     const fileType = req.file.mimetype;
     const fileSize = req.file.size;
 
+    // Check file size limit based on user's premium level
+    try {
+      // Get user's premium level (default to 0 if not set)
+      const userPremium = await sql`
+        SELECT premium_level FROM users WHERE user_id = ${user_id}
+      `;
+      
+      const premiumLevel = userPremium.length > 0 ? (userPremium[0].premium_level || 0) : 0;
+
+      // Get file size limit for user's premium level (in MB)
+      const filesLimit = await sql`
+        SELECT premium_level_0, premium_level_1, premium_level_2 
+        FROM limits 
+        WHERE name = 'files_mb'
+      `;
+
+      if (filesLimit.length > 0) {
+        // Get current total file size in MB
+        const filesSize = await sql`
+          SELECT COALESCE(SUM(file_size), 0) as total_size FROM files WHERE user_id = ${user_id}
+        `;
+
+        const currentSizeMB = Math.round((parseInt(filesSize[0]?.total_size || 0) / (1024 * 1024)) * 100) / 100;
+        const newFileSizeMB = Math.round((fileSize / (1024 * 1024)) * 100) / 100;
+        
+        // Get limit based on premium level (in MB)
+        let limitMB;
+        switch (premiumLevel) {
+          case 0: limitMB = filesLimit[0].premium_level_0; break;
+          case 1: limitMB = filesLimit[0].premium_level_1; break;
+          case 2: limitMB = filesLimit[0].premium_level_2; break;
+          default: limitMB = filesLimit[0].premium_level_0;
+        }
+
+        const wouldExceedLimit = (currentSizeMB + newFileSizeMB) > limitMB;
+
+        if (wouldExceedLimit) {
+          return res.status(413).json({ 
+            error: 'Limit rozmiaru plików został przekroczony',
+            details: `Aktualny rozmiar: ${currentSizeMB}MB, limit: ${limitMB}MB, nowy plik: ${newFileSizeMB}MB`
+          });
+        }
+      }
+    } catch (limitError) {
+      console.error('Error checking file size limit:', limitError);
+      // Continue with upload if limit check fails (fallback behavior)
+    }
+
     // Enforce 1MB limit for project icon uploads
     if (req.body.project_id && fileSize > 1024 * 1024) {
       return res.status(413).json({ error: 'Max file size 1MB for project icon' });

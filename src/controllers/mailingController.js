@@ -11,6 +11,8 @@ const createTransporter = () => {
     const port = parseInt(process.env.SMTP_PORT);
     const isSecure = port === 465;
     
+    console.log(`[SMTP] Configuring transporter - Host: ${process.env.SMTP_HOST}, Port: ${port}, User: ${process.env.SMTP_USER}, Secure: ${isSecure}`);
+    
     return nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: port,
@@ -18,6 +20,9 @@ const createTransporter = () => {
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS?.replace(/['"]/g, '') // Remove quotes if present
+        },
+        tls: {
+            rejectUnauthorized: false // Allow self-signed certificates
         }
     });
 };
@@ -49,9 +54,17 @@ export async function sendContactMessage(req, res) {
         
         // Verify transporter configuration
         try {
+            console.log('[SMTP] Verifying transporter configuration...');
             await transporter.verify();
+            console.log('[SMTP] Transporter verification successful');
         } catch (error) {
-            console.error('SMTP configuration error:', error);
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
             return res.status(500).json({ 
                 message: "Błąd konfiguracji usługi email.", 
                 response: false 
@@ -126,9 +139,17 @@ export async function sendConfirmAccountEmail(req, res) {
         
         // Verify transporter configuration
         try {
+            console.log('[SMTP] Verifying transporter configuration...');
             await transporter.verify();
+            console.log('[SMTP] Transporter verification successful');
         } catch (error) {
-            console.error('SMTP configuration error:', error);
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
             return res.status(500).json({ 
                 message: "Błąd konfiguracji usługi email.", 
                 response: false 
@@ -183,7 +204,9 @@ export async function sendConfirmAccountEmailInternal(user_id, email_token, emai
         const transporter = createTransporter();
         
         // Verify transporter configuration
+        console.log('[SMTP] Verifying transporter configuration...');
         await transporter.verify();
+        console.log('[SMTP] Transporter verification successful');
         
         // Email content using template
         const mailOptions = {
@@ -239,9 +262,17 @@ export async function sendNewPasswordEmail(req, res) {
         
         // Verify transporter configuration
         try {
+            console.log('[SMTP] Verifying transporter configuration...');
             await transporter.verify();
+            console.log('[SMTP] Transporter verification successful');
         } catch (error) {
-            console.error('SMTP configuration error:', error);
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
             return res.status(500).json({ 
                 message: "Błąd konfiguracji usługi email.", 
                 response: false 
@@ -304,9 +335,17 @@ export async function sendRequestPasswordResetEmail(req, res) {
         
         // Verify transporter configuration
         try {
+            console.log('[SMTP] Verifying transporter configuration...');
             await transporter.verify();
+            console.log('[SMTP] Transporter verification successful');
         } catch (error) {
-            console.error('SMTP configuration error:', error);
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
             return res.status(500).json({ 
                 message: "Błąd konfiguracji usługi email.", 
                 response: false 
@@ -361,7 +400,9 @@ export async function sendRequestPasswordResetEmailInternal(email_receiver, user
         const transporter = createTransporter();
         
         // Verify transporter configuration
+        console.log('[SMTP] Verifying transporter configuration...');
         await transporter.verify();
+        console.log('[SMTP] Transporter verification successful');
         
         // Email content using template
         const mailOptions = {
@@ -417,9 +458,17 @@ export async function sendPasswordChangedEmail(req, res) {
         
         // Verify transporter configuration
         try {
+            console.log('[SMTP] Verifying transporter configuration...');
             await transporter.verify();
+            console.log('[SMTP] Transporter verification successful');
         } catch (error) {
-            console.error('SMTP configuration error:', error);
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
             return res.status(500).json({ 
                 message: "Błąd konfiguracji usługi email.", 
                 response: false 
@@ -474,7 +523,9 @@ export async function sendPasswordChangedEmailInternal(email_receiver) {
         const transporter = createTransporter();
         
         // Verify transporter configuration
+        console.log('[SMTP] Verifying transporter configuration...');
         await transporter.verify();
+        console.log('[SMTP] Transporter verification successful');
         
         // Email content using template
         const mailOptions = {

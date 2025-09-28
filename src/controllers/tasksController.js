@@ -188,6 +188,30 @@ export const listTasks = async (req, res) => {
     }
 };
 
+export const getTask = async (req, res) => {
+    try {
+        const { user_id, id } = req.body;
+
+        const user = await getActiveUserOrError(user_id, res);
+        if (!user) return;
+
+        const tasks = await sql`
+            SELECT * FROM tasks
+            WHERE user_id = ${user_id} AND id = ${id}
+        `;
+
+        if (tasks.length === 0) {
+            res.status(404).json({ error: "Task not found" });
+            return;
+        }
+
+        res.json({ task: tasks[0] });
+    } catch (error) {
+        console.error("Error getting task:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 export const getUpcomingTasks = async (req, res) => {
     try {
         const { user_id, days_ahead = 3 } = req.body;

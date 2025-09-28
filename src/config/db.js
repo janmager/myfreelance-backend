@@ -332,6 +332,62 @@ export async function initializeDatabase() {
             `;
         } catch (e) {}
 
+    // Create valuations table
+    await sql`
+        CREATE TABLE IF NOT EXISTS valuations (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            client_id TEXT REFERENCES clients(client_id) ON DELETE SET NULL,
+            project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'active', 'cancelled', 'inactive')),
+            total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+            total_amount_net DECIMAL(10,2) NOT NULL DEFAULT 0,
+            total_amount_gross DECIMAL(10,2) NOT NULL DEFAULT 0,
+            currency TEXT DEFAULT 'PLN',
+            settlement_type TEXT DEFAULT 'przelew' CHECK (settlement_type IN ('przelew', 'faktura_vat', 'inne')),
+            contract_type TEXT DEFAULT 'umowa_prywatna' CHECK (contract_type IN ('umowa_prywatna', 'umowa_zlecenie', 'bez_umowy', 'inne')),
+            valid_until DATE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            sent_at TIMESTAMP WITH TIME ZONE,
+            accepted_at TIMESTAMP WITH TIME ZONE,
+            rejected_at TIMESTAMP WITH TIME ZONE,
+            notes TEXT
+        )
+    `;
+
+        // Create indexes for valuations table
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_valuations_user_id ON valuations(user_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_valuations_client_id ON valuations(client_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_valuations_project_id ON valuations(project_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_valuations_status ON valuations(status)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_valuations_created_at ON valuations(created_at)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_valuations_valid_until ON valuations(valid_until)`; } catch (e) {}
+
+        // Create trigger for valuations table updated_at
+        try {
+            await sql`
+                CREATE OR REPLACE FUNCTION update_valuations_updated_at()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = NOW();
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql
+            `;
+        } catch (e) {}
+
+        try {
+            await sql`
+                CREATE TRIGGER trigger_update_valuations_updated_at
+                    BEFORE UPDATE ON valuations
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_valuations_updated_at()
+            `;
+        } catch (e) {}
+
         // Insert default system settings
         try {
             await sql`

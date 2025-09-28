@@ -127,6 +127,19 @@ export const globalSearch = async (req, res) => {
             LIMIT ${perTable}
         `;
 
+        // Valuations
+        const valuations = await sql`
+            SELECT id, title, description, status, total_amount, total_amount_net, total_amount_gross, currency, settlement_type, contract_type, client_id, project_id, created_at, updated_at
+            FROM valuations
+            WHERE user_id = ${user_id}
+              AND (
+                title ILIKE ${like}
+                OR description ILIKE ${like}
+              )
+            ORDER BY updated_at DESC
+            LIMIT ${perTable}
+        `;
+
         res.json({
             query,
             results: {
@@ -137,6 +150,7 @@ export const globalSearch = async (req, res) => {
                 contracts,
                 files,
                 links,
+                valuations,
             }
         });
     } catch (error) {
