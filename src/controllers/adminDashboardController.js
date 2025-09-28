@@ -127,6 +127,18 @@ export async function getDashboardStats(req, res) {
             FROM files
         `;
 
+        // Valuations statistics
+        const valuationsStats = await sql`
+            SELECT 
+                COUNT(*) as total_valuations,
+                COUNT(*) FILTER (WHERE status = 'draft') as draft_valuations,
+                COUNT(*) FILTER (WHERE status = 'sent') as sent_valuations,
+                COUNT(*) FILTER (WHERE status = 'active') as active_valuations,
+                COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_valuations,
+                COUNT(*) FILTER (WHERE status = 'inactive') as inactive_valuations
+            FROM valuations
+        `;
+
         // Recent activity (last 7 days)
         const recentActivity = await sql`
             SELECT 
@@ -136,7 +148,8 @@ export async function getDashboardStats(req, res) {
                 (SELECT COUNT(*) FROM tasks WHERE created_at >= NOW() - INTERVAL '7 days') as new_tasks,
                 (SELECT COUNT(*) FROM notes WHERE created_at >= NOW() - INTERVAL '7 days') as new_notes,
                 (SELECT COUNT(*) FROM contracts WHERE created_at >= NOW() - INTERVAL '7 days') as new_contracts,
-                (SELECT COUNT(*) FROM files WHERE file_created_at >= NOW() - INTERVAL '7 days') as new_files
+                (SELECT COUNT(*) FROM files WHERE file_created_at >= NOW() - INTERVAL '7 days') as new_files,
+                (SELECT COUNT(*) FROM valuations WHERE created_at >= NOW() - INTERVAL '7 days') as new_valuations
         `;
 
         // System overview
@@ -159,6 +172,7 @@ export async function getDashboardStats(req, res) {
                 ...filesStats[0] || {},
                 total_size_mb: Math.round((filesStats[0]?.total_size_bytes || 0) / (1024 * 1024) * 100) / 100
             },
+            valuations: valuationsStats[0] || {},
             recent_activity: recentActivity[0] || {},
             system_overview: systemOverview[0] || {}
         };

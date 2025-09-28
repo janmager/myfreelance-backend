@@ -43,24 +43,27 @@ export async function getUserUsage(req, res) {
     `;
 
     // Get actual usage counts
-    const [clientsCount, projectsCount, notesCount, contractsCount, filesCount, linksCount, tasksCount] = await Promise.all([
+    const [clientsCount, projectsCount, notesCount, contractsCount, filesCount, linksCount, tasksCount, valuationsCount] = await Promise.all([
       sql`SELECT COUNT(*) as count FROM clients WHERE user_id = ${user_id}`,
       sql`SELECT COUNT(*) as count FROM projects WHERE user_id = ${user_id}`,
       sql`SELECT COUNT(*) as count FROM notes WHERE user_id = ${user_id}`,
       sql`SELECT COUNT(*) as count FROM contracts WHERE user_id = ${user_id}`,
       sql`SELECT COUNT(*) as count, COALESCE(SUM(file_size), 0) as total_size FROM files WHERE user_id = ${user_id}`,
       sql`SELECT COUNT(*) as count FROM links WHERE user_id = ${user_id}`,
-      sql`SELECT COUNT(*) as count FROM tasks WHERE user_id = ${user_id}`
+      sql`SELECT COUNT(*) as count FROM tasks WHERE user_id = ${user_id}`,
+      sql`SELECT COUNT(*) as count FROM valuations WHERE user_id = ${user_id}`
     ]);
 
     // Get active counts
-    const [activeClients, activeProjects, activeContracts, completedProjects, completedTasks, pendingTasks] = await Promise.all([
+    const [activeClients, activeProjects, activeContracts, completedProjects, completedTasks, pendingTasks, activeValuations, draftValuations] = await Promise.all([
       sql`SELECT COUNT(*) as count FROM clients WHERE user_id = ${user_id} AND status = 'active'`,
       sql`SELECT COUNT(*) as count FROM projects WHERE user_id = ${user_id} AND status = 'active'`,
       sql`SELECT COUNT(*) as count FROM contracts WHERE user_id = ${user_id} AND status = 'active'`,
       sql`SELECT COUNT(*) as count FROM projects WHERE user_id = ${user_id} AND status = 'completed'`,
       sql`SELECT COUNT(*) as count FROM tasks WHERE user_id = ${user_id} AND status = 'done'`,
-      sql`SELECT COUNT(*) as count FROM tasks WHERE user_id = ${user_id} AND status IN ('todo', 'in_progress')`
+      sql`SELECT COUNT(*) as count FROM tasks WHERE user_id = ${user_id} AND status IN ('todo', 'in_progress')`,
+      sql`SELECT COUNT(*) as count FROM valuations WHERE user_id = ${user_id} AND status = 'active'`,
+      sql`SELECT COUNT(*) as count FROM valuations WHERE user_id = ${user_id} AND status = 'draft'`
     ]);
 
     // Helper function to get limit for premium level
@@ -120,6 +123,13 @@ export async function getUserUsage(req, res) {
         pending: parseInt(pendingTasks[0]?.count || 0),
         used: parseInt(tasksCount[0]?.count || 0),
         limit: getLimit('tasks')
+      },
+      valuations: {
+        total: parseInt(valuationsCount[0]?.count || 0),
+        active: parseInt(activeValuations[0]?.count || 0),
+        draft: parseInt(draftValuations[0]?.count || 0),
+        used: parseInt(valuationsCount[0]?.count || 0),
+        limit: getLimit('valuations')
       }
     };
 
@@ -598,6 +608,72 @@ export async function checkTaskLimit(req, res) {
     res.status(500).json({
       response: false,
       message: 'Błąd podczas sprawdzania limitu zadań'
+    });
+  }
+}
+
+export async function checkValuationLimit(req, res) {
+  try {
+    const { user_id } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).json({
+        response: false,
+        message: 'user_id jest wymagane'
+      });
+    }
+
+    // Get user's premium level (default to 0 if not set)
+    const user = await sql`
+      SELECT premium_level FROM users WHERE user_id = ${user_id}
+    `;
+    
+    const premiumLevel = user.length > 0 ? (user[0].premium_level || 0) : 0;
+
+    // Get valuations limit for user's premium level
+    const valuationsLimit = await sql`
+      SELECT premium_level_0, premium_level_1, premium_level_2 
+      FROM limits 
+      WHERE name = 'valuations'
+    `;
+
+    if (valuationsLimit.length === 0) {
+      return res.status(500).json({
+        response: false,
+        message: 'Limit wycen nie został znaleziony'
+      });
+    }
+
+    // Get current valuations count
+    const valuationsCount = await sql`
+      SELECT COUNT(*) as count FROM valuations WHERE user_id = ${user_id}
+    `;
+
+    const currentCount = parseInt(valuationsCount[0]?.count || 0);
+    
+    // Get limit based on premium level
+    let limit;
+    switch (premiumLevel) {
+      case 0: limit = valuationsLimit[0].premium_level_0; break;
+      case 1: limit = valuationsLimit[0].premium_level_1; break;
+      case 2: limit = valuationsLimit[0].premium_level_2; break;
+      default: limit = valuationsLimit[0].premium_level_0;
+    }
+
+    const canAdd = currentCount < limit;
+
+    res.status(200).json({
+      response: true,
+      can_add: canAdd,
+      current_count: currentCount,
+      limit: limit,
+      premium_level: premiumLevel
+    });
+  } catch (error) {
+    console.error('Error checking valuation limit:', error);
+    res.status(500).json({
+      response: false,
+      message: 'Błąd podczas sprawdzania limitu wycen'
     });
   }
 }

@@ -151,14 +151,15 @@ export async function getAdminLimitsStats(req, res) {
         `;
         
         // Get total usage statistics
-        const [totalClients, totalProjects, totalNotes, totalContracts, totalFiles, totalLinks, totalTasks] = await Promise.all([
+        const [totalClients, totalProjects, totalNotes, totalContracts, totalFiles, totalLinks, totalTasks, totalValuations] = await Promise.all([
             sql`SELECT COUNT(*) as count FROM clients`,
             sql`SELECT COUNT(*) as count FROM projects`,
             sql`SELECT COUNT(*) as count FROM notes`,
             sql`SELECT COUNT(*) as count FROM contracts`,
             sql`SELECT COUNT(*) as count, COALESCE(SUM(file_size), 0) as total_size FROM files`,
             sql`SELECT COUNT(*) as count FROM links`,
-            sql`SELECT COUNT(*) as count FROM tasks`
+            sql`SELECT COUNT(*) as count FROM tasks`,
+            sql`SELECT COUNT(*) as count FROM valuations`
         ]);
         
         const stats = {
@@ -173,7 +174,8 @@ export async function getAdminLimitsStats(req, res) {
                     total_size_mb: Math.round((parseInt(totalFiles[0]?.total_size || 0) / (1024 * 1024)) * 100) / 100
                 },
                 links: parseInt(totalLinks[0]?.count || 0),
-                tasks: parseInt(totalTasks[0]?.count || 0)
+                tasks: parseInt(totalTasks[0]?.count || 0),
+                valuations: parseInt(totalValuations[0]?.count || 0)
             },
             limits: limits
         };

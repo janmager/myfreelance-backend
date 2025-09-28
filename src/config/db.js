@@ -234,7 +234,8 @@ export async function initializeDatabase() {
                 ('contracts', 5, 25, 100),
                 ('files_mb', 1024, 5120, 20480),
                 ('links', 10, 50, 200),
-                ('tasks', 50, 250, 1000)
+                ('tasks', 50, 250, 1000),
+                ('valuations', 5, 25, 100)
                 ON CONFLICT (name) DO NOTHING
             `;
         } catch (e) {}
