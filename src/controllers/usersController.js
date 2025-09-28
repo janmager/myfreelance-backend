@@ -2,6 +2,75 @@ import { sql } from "../config/db.js";
 import { hashPass, comparePass } from "../config/password.js";
 import { sendConfirmAccountEmailInternal, sendRequestPasswordResetEmailInternal, sendPasswordChangedEmailInternal } from "./mailingController.js";
 
+// Security function to verify user status
+export async function verifyUserStatus(req, res) {
+  try {
+    const { user_id } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).json({ 
+        response: false, 
+        message: "Brak ID użytkownika." 
+      });
+    }
+
+    // Get current user data from database
+    const user = await sql`
+      SELECT 
+        user_id,
+        email,
+        name,
+        type,
+        state,
+        premium_level,
+        phone,
+        avatar,
+        register_at,
+        updated_at,
+        logged_at
+      FROM users 
+      WHERE user_id = ${user_id}
+    `;
+
+    if (user.length === 0) {
+      return res.status(404).json({ 
+        response: false, 
+        message: "Użytkownik nie został znaleziony." 
+      });
+    }
+
+    const userData = user[0];
+
+    // Check if user is active
+    if (userData.state === 'deleted') {
+      return res.status(403).json({ 
+        response: false, 
+        message: "Konto zostało usunięte." 
+      });
+    }
+
+    if (userData.state === 'blocked') {
+      return res.status(403).json({ 
+        response: false, 
+        message: "Konto zostało zablokowane." 
+      });
+    }
+
+    // Return fresh user data
+    res.status(200).json({
+      response: true,
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Error verifying user status:', error);
+    res.status(500).json({ 
+      response: false, 
+      message: "Wystąpił błąd podczas weryfikacji użytkownika." 
+    });
+  }
+}
+
 export async function createUser(req, res) {
   try {
     const { email, password } = req.body;

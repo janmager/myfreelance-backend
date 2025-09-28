@@ -24,20 +24,20 @@ const createTransporter = () => {
 
 export async function sendContactMessage(req, res) {
     try {
-        const { title, content, email_sender } = req.body;
-        console.log(`📧 [MAILING] Send contact message request - From: ${email_sender}, Title: ${title}`);
+        const { name, email, subject, message } = req.body;
+        console.log(`📧 [MAILING] Send contact message request - From: ${email}, Subject: ${subject}`);
         
         // Validate required fields
-        if (!title || !content || !email_sender) {
+        if (!name || !email || !subject || !message) {
             return res.status(400).json({ 
-                message: "Tytuł, treść i email_sender są wymagane.", 
+                message: "Imię, email, temat i wiadomość są wymagane.", 
                 response: false 
             });
         }
         
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email_sender)) {
+        if (!emailRegex.test(email)) {
             return res.status(400).json({ 
                 message: "Proszę podać prawidłowy adres email.", 
                 response: false 
@@ -67,13 +67,16 @@ export async function sendContactMessage(req, res) {
             minute: '2-digit'
         });
         
+        // Create email content with name and subject
+        const emailContent = `Imię: ${name}\nEmail: ${email}\n\nWiadomość:\n${message}`;
+        
         // Email content using template
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: process.env.CONTACT_EMAIL,
-            subject: `Wiadomość kontaktowa: ${title} | ${timestamp}`,
-            html: contactEmailTemplate(email_sender, title, content, timestamp),
-            text: contactEmailTextTemplate(email_sender, title, content, timestamp)
+            subject: `Wiadomość kontaktowa: ${subject} | ${timestamp}`,
+            html: contactEmailTemplate(email, subject, emailContent, timestamp),
+            text: contactEmailTextTemplate(email, subject, emailContent, timestamp)
         };
         
         // Send email

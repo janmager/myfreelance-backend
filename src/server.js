@@ -22,6 +22,12 @@ import contractsRoutes from "./routes/contractsRoutes.js";
 import linksRoutes from "./routes/linksRoutes.js";
 import limitsRoutes from "./routes/limitsRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import adminLimitsRoutes from "./routes/adminLimitsRoutes.js";
+import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
+import adminClientsRoutes from "./routes/adminClientsRoutes.js";
+import adminProjectsRoutes from "./routes/adminProjectsRoutes.js";
+import adminSettingsRoutes from "./routes/adminSettingsRoutes.js";
 dotenv.config();
 //
 const app = express();
@@ -72,6 +78,12 @@ app.use("/api/contracts", contractsRoutes);
 app.use("/api/links", linksRoutes);
 app.use("/api/limits", limitsRoutes);
 app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/admin/limits", adminLimitsRoutes);
+app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/admin/clients", adminClientsRoutes);
+app.use("/api/admin/projects", adminProjectsRoutes);
+app.use("/api/admin/settings", adminSettingsRoutes);
 
 // Log all routes
 console.log('📋 [ROUTES] Available API endpoints:');
@@ -88,6 +100,12 @@ console.log('  - /api/contracts - Contracts management');
 console.log('  - /api/links - Links management');
 console.log('  - /api/limits - Limits and usage management');
 console.log('  - /api/subscription - Subscription management');
+console.log('  - /api/admin - Admin panel management');
+console.log('  - /api/admin/limits - Admin limits management');
+console.log('  - /api/admin/dashboard - Admin dashboard statistics');
+console.log('  - /api/admin/clients - Admin clients management');
+console.log('  - /api/admin/projects - Admin projects management');
+console.log('  - /api/admin/settings - Admin system settings management');
 
 app.get("/api/health", (req, res) => {
     res.send("API is working fine.");

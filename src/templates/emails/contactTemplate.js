@@ -114,7 +114,7 @@ export const contactEmailTemplate = (email_sender, title, content, timestamp) =>
                 </div>
                 
                 <p style="text-align: center; margin-top: 25px;">
-                    <strong>Odpowiedz:</strong> <a href="mailto:${email_sender}" style="color: #efb414;">${email_sender}</a>
+                    <strong>Odpowiedz:</strong> <a href="mailto:${email_sender}" style="color: #3f95ff;">${email_sender}</a>
                 </p>
             </div>
             

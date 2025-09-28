@@ -294,6 +294,52 @@ export async function initializeDatabase() {
                     EXECUTE FUNCTION update_user_subscriptions_updated_at()
             `;
         } catch (e) {}
+
+        // System table for portal settings
+        await sql`
+            CREATE TABLE IF NOT EXISTS system (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) UNIQUE NOT NULL,
+                value TEXT NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+
+        // Create index for system table
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_system_name ON system(name)`; } catch (e) {}
+
+        // Create trigger for system table updated_at
+        try {
+            await sql`
+                CREATE OR REPLACE FUNCTION update_system_updated_at()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = CURRENT_TIMESTAMP;
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql
+            `;
+        } catch (e) {}
+
+        try {
+            await sql`
+                CREATE TRIGGER trigger_update_system_updated_at
+                    BEFORE UPDATE ON system
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_system_updated_at()
+            `;
+        } catch (e) {}
+
+        // Insert default system settings
+        try {
+            await sql`
+                INSERT INTO system (name, value, description) VALUES
+                ('maintenance_mode', '0', 'Maintenance mode: 0 = disabled, 1 = enabled')
+                ON CONFLICT (name) DO NOTHING
+            `;
+        } catch (e) {}
         
     } catch (error) {
         console.error('Error initializing database:', error);

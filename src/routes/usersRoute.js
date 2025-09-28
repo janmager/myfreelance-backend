@@ -1,5 +1,5 @@
 import express from "express"
-import { checkAuthUser, createUser, getUser, confirmAccount, resetPassword, requestResetPassword, changePassword, editProfile, deleteAccount, editAvatar } from "../controllers/usersController.js";
+import { checkAuthUser, createUser, getUser, confirmAccount, resetPassword, requestResetPassword, changePassword, editProfile, deleteAccount, editAvatar, verifyUserStatus } from "../controllers/usersController.js";
 
 const router = express.Router();
 
@@ -10,6 +10,7 @@ router.get("/checkAuthUser", checkAuthUser);
 // POST endpoints for creating resources
 router.post("/createUser", createUser);
 router.post("/requestResetPassword", requestResetPassword);
+router.post("/verify-status", verifyUserStatus);
 
 // PUT endpoints for updating resources
 router.put("/confirmAccount", confirmAccount);
