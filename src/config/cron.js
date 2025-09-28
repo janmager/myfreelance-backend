@@ -32,9 +32,9 @@ async function checkSubscriptionStatus() {
       try {
         // Get subscription details from Stripe
         const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id);
-        
         // Check if subscription status has changed
-        if (stripeSubscription.status !== subscription.status) {
+        if (true) {
+        // if (stripeSubscription.status !== subscription.status) {
           console.log(`[CRON] Updating subscription ${subscription.subscription_id} status from ${subscription.status} to ${stripeSubscription.status}`);
           
           // Update subscription status in database
@@ -51,9 +51,17 @@ async function checkSubscriptionStatus() {
 
           // Update user premium level based on subscription status
           let newPremiumLevel = 0;
-          if (stripeSubscription.status === 'active') {
-            const productConfig = getProductConfig(subscription.product_name);
-            newPremiumLevel = productConfig.premiumLevel;
+          if (stripeSubscription.status === 'active' && stripeSubscription.items.data[0].plan.product) {
+            // Set premium level based on subscription name
+            if (['prod_T8JL6cxSFNO4as', 'prod_T8JKy9wh4jDoGZ'].includes(stripeSubscription.items.data[0].plan.product)) {
+              newPremiumLevel = 2;
+            } else if (['prod_T8JKtN7ZLYZ8RX', 'prod_T8JJjuwRTUK1bb'].includes(stripeSubscription.items.data[0].plan.product)) {
+              newPremiumLevel = 1;
+            } else {
+              // Fallback to premium level 1 for any other active subscription
+              newPremiumLevel = 1;
+            }
+            console.log(`Setting premium level to ${newPremiumLevel} for subscription name: ${stripeSubscription.name}`);
           }
 
           await sql`
@@ -67,7 +75,7 @@ async function checkSubscriptionStatus() {
           console.log(`[CRON] Updated user ${subscription.user_id} premium level to ${newPremiumLevel}`);
         }
 
-        // Update subscription dates even if status hasn't changed
+        // Update subscription dates and premium level even if status hasn't changed
         if (stripeSubscription.current_period_end) {
           await sql`
             UPDATE user_subscriptions 
@@ -78,6 +86,30 @@ async function checkSubscriptionStatus() {
               updated_at = CURRENT_TIMESTAMP
             WHERE subscription_id = ${subscription.subscription_id}
           `;
+
+          // Always update premium level based on current Stripe subscription status
+          let newPremiumLevel = 0;
+          if (stripeSubscription.status === 'active') {
+            // Set premium level based on subscription name
+            if (['prod_T8JL6cxSFNO4as', 'prod_T8JKy9wh4jDoGZ'].includes(stripeSubscription.items.data[0].plan.product)) {
+              newPremiumLevel = 2;
+            } else if (['prod_T8JKtN7ZLYZ8RX', 'prod_T8JJjuwRTUK1bb'].includes(stripeSubscription.items.data[0].plan.product)) {
+              newPremiumLevel = 1;
+            } else {
+              // Fallback to premium level 1 for any other active subscription
+              newPremiumLevel = 1;
+            }
+          }
+
+          await sql`
+            UPDATE users 
+            SET 
+              premium_level = ${newPremiumLevel},
+              updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ${subscription.user_id}
+          `;
+
+          console.log(`[CRON] Updated user ${subscription.user_id} premium level to ${newPremiumLevel} (status: ${stripeSubscription.status})`);
         }
 
       } catch (stripeError) {
