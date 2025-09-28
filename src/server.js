@@ -28,6 +28,7 @@ import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
 import adminClientsRoutes from "./routes/adminClientsRoutes.js";
 import adminProjectsRoutes from "./routes/adminProjectsRoutes.js";
 import adminSettingsRoutes from "./routes/adminSettingsRoutes.js";
+import maintenanceRoutes from "./routes/maintenanceRoutes.js";
 dotenv.config();
 //
 const app = express();
@@ -84,6 +85,7 @@ app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/clients", adminClientsRoutes);
 app.use("/api/admin/projects", adminProjectsRoutes);
 app.use("/api/admin/settings", adminSettingsRoutes);
+app.use("/api/maintenance", maintenanceRoutes);
 
 // Log all routes
 console.log('📋 [ROUTES] Available API endpoints:');
@@ -106,6 +108,7 @@ console.log('  - /api/admin/dashboard - Admin dashboard statistics');
 console.log('  - /api/admin/clients - Admin clients management');
 console.log('  - /api/admin/projects - Admin projects management');
 console.log('  - /api/admin/settings - Admin system settings management');
+console.log('  - /api/maintenance - Maintenance mode status');
 
 app.get("/api/health", (req, res) => {
     res.send("API is working fine.");

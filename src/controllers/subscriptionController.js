@@ -374,15 +374,7 @@ export async function getSubscriptionManagementInfo(req, res) {
           current_period_start: currentPeriodStart,
           current_period_end: currentPeriodEnd,
           stripe_subscription_id: sub.stripe_subscription_id,
-          stripe_data: {
-            status: stripeSubscription.status,
-            current_period_start: stripeSubscription.current_period_start,
-            current_period_end: stripeSubscription.current_period_end,
-            cancel_at_period_end: stripeSubscription.cancel_at_period_end,
-            canceled_at: stripeSubscription.canceled_at,
-            trial_start: stripeSubscription.trial_start,
-            trial_end: stripeSubscription.trial_end,
-          }
+          stripe_data: stripeSubscription // Return full Stripe subscription object like in cron.js
         }
       });
 
