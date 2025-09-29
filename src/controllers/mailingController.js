@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import sgMail from '@sendgrid/mail';
 import 'dotenv/config';
 import { contactEmailTemplate, contactEmailTextTemplate } from '../templates/emails/contactTemplate.js';
 import { confirmAccountEmailTemplate, confirmAccountEmailTextTemplate } from '../templates/emails/confirmAccountTemplate.js';
@@ -13,71 +12,6 @@ const RETRY_DELAY = 2000; // 2 seconds
 
 // Helper function to sleep
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Initialize SendGrid if API key is available
-if (process.env.SENDGRID_API_KEY) {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    console.log('[SENDGRID] API key configured');
-} else {
-    console.log('[SENDGRID] No API key found, SendGrid will not be available');
-}
-
-// Helper function to send email via SendGrid
-const sendEmailViaSendGrid = async (mailOptions) => {
-    if (!process.env.SENDGRID_API_KEY) {
-        throw new Error('SendGrid API key not configured');
-    }
-    
-    console.log('[SENDGRID] Sending email via SendGrid API');
-    
-    const msg = {
-        to: mailOptions.to,
-        from: mailOptions.from || process.env.SMTP_USER,
-        subject: mailOptions.subject,
-        html: mailOptions.html,
-        text: mailOptions.text
-    };
-    
-    try {
-        const response = await sgMail.send(msg);
-        console.log('[SENDGRID] Email sent successfully:', response[0].statusCode);
-        return {
-            success: true,
-            messageId: response[0].headers['x-message-id'],
-            response: response[0]
-        };
-    } catch (error) {
-        console.error('[SENDGRID] Error sending email:', error);
-        throw error;
-    }
-};
-
-// Helper function to send email with SMTP/SendGrid fallback
-const sendEmailWithFallback = async (mailOptions) => {
-    // Try SMTP first, then fallback to SendGrid
-    try {
-        console.log('[EMAIL] Attempting to send via SMTP...');
-        const transporter = await createTransporterWithFallback();
-        const info = await transporter.sendMail(mailOptions);
-        console.log('[EMAIL] Successfully sent via SMTP');
-        return { messageId: info.messageId, method: 'SMTP' };
-    } catch (smtpError) {
-        console.error('[EMAIL] SMTP failed, trying SendGrid fallback:', smtpError.message);
-        
-        if (process.env.SENDGRID_API_KEY) {
-            try {
-                const sendGridResult = await sendEmailViaSendGrid(mailOptions);
-                console.log('[EMAIL] Successfully sent via SendGrid');
-                return { messageId: sendGridResult.messageId, method: 'SendGrid' };
-            } catch (sendGridError) {
-                console.error('[EMAIL] SendGrid also failed:', sendGridError.message);
-                throw new Error(`Both SMTP and SendGrid failed. SMTP: ${smtpError.message}, SendGrid: ${sendGridError.message}`);
-            }
-        } else {
-            throw new Error(`SMTP failed and SendGrid not configured: ${smtpError.message}`);
-        }
-    }
-};
 
 // Helper function to verify transporter with retry
 const verifyTransporterWithRetry = async (transporter, maxRetries = MAX_RETRIES) => {
@@ -103,6 +37,12 @@ const verifyTransporterWithRetry = async (transporter, maxRetries = MAX_RETRIES)
 
 // Create email transporter with fallback ports
 const createTransporter = (fallbackPort = null) => {
+    console.log('createTransporter')
+    console.log(process.env.SMTP_HOST)
+    console.log(process.env.SMTP_PORT)
+    console.log(process.env.SMTP_USER)
+    console.log(process.env.SMTP_PASS)
+    console.log(process.env.CONTACT_EMAIL)
     const port = fallbackPort || parseInt(process.env.SMTP_PORT);
     const isSecure = port === 465;
     
@@ -111,14 +51,13 @@ const createTransporter = (fallbackPort = null) => {
     return nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: port,
-        secure: isSecure, // true for 465, false for other ports
+        secure: false, // true for 465, false for other ports
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS?.replace(/['"]/g, '') // Remove quotes if present
         },
-        tls: {
-            rejectUnauthorized: false // Allow self-signed certificates
-        },
+        debug: true,
+        tls: false,
         connectionTimeout: 60000, // 60 seconds
         greetingTimeout: 30000, // 30 seconds
         socketTimeout: 60000, // 60 seconds
@@ -192,6 +131,24 @@ export async function sendContactMessage(req, res) {
             });
         }
         
+        // Create transporter with fallback
+        let transporter;
+        try {
+            transporter = await createTransporterWithFallback();
+        } catch (error) {
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
+            return res.status(500).json({ 
+                message: "Błąd konfiguracji usługi email.", 
+                response: false 
+            });
+        }
+        
         // Generate timestamp
         const timestamp = new Date().toLocaleString('pl-PL', {
             year: 'numeric',
@@ -213,9 +170,8 @@ export async function sendContactMessage(req, res) {
             text: contactEmailTextTemplate(email, subject, emailContent, timestamp)
         };
         
-        // Send email with fallback
-        const result = await sendEmailWithFallback(mailOptions);
-        const info = { messageId: result.messageId };
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
         
         
         console.log(`✅ [MAILING] Contact message sent successfully - Message ID: ${info.messageId}`);
@@ -256,6 +212,24 @@ export async function sendConfirmAccountEmail(req, res) {
             });
         }
         
+        // Create transporter with fallback
+        let transporter;
+        try {
+            transporter = await createTransporterWithFallback();
+        } catch (error) {
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
+            return res.status(500).json({ 
+                message: "Błąd konfiguracji usługi email.", 
+                response: false 
+            });
+        }
+        
         // Email content using template
         const mailOptions = {
             from: process.env.SMTP_USER,
@@ -265,9 +239,8 @@ export async function sendConfirmAccountEmail(req, res) {
             text: confirmAccountEmailTextTemplate(email_receiver, email_token, user_id)
         };
         
-        // Send email with fallback
-        const result = await sendEmailWithFallback(mailOptions);
-        const info = { messageId: result.messageId };
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
         
         
         console.log(`✅ [MAILING] Confirm account email sent successfully - Message ID: ${info.messageId}`);
@@ -301,6 +274,9 @@ export async function sendConfirmAccountEmailInternal(user_id, email_token, emai
             throw new Error("Please provide a valid email address.");
         }
         
+        // Create transporter with fallback
+        const transporter = await createTransporterWithFallback();
+        
         // Email content using template
         const mailOptions = {
             from: process.env.SMTP_USER,
@@ -310,13 +286,13 @@ export async function sendConfirmAccountEmailInternal(user_id, email_token, emai
             text: confirmAccountEmailTextTemplate(email_receiver, email_token, user_id)
         };
         
-        // Send email with fallback
-        const result = await sendEmailWithFallback(mailOptions);
-        console.log(`✅ [MAILING] Internal confirm account email sent successfully - Message ID: ${result.messageId}`);
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ [MAILING] Internal confirm account email sent successfully - Message ID: ${info.messageId}`);
         
         return {
             success: true,
-            messageId: result.messageId,
+            messageId: info.messageId,
             message: "Email potwierdzenia konta został pomyślnie wysłany."
         };
         
@@ -350,6 +326,24 @@ export async function sendNewPasswordEmail(req, res) {
             });
         }
         
+        // Create transporter with fallback
+        let transporter;
+        try {
+            transporter = await createTransporterWithFallback();
+        } catch (error) {
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
+            return res.status(500).json({ 
+                message: "Błąd konfiguracji usługi email.", 
+                response: false 
+            });
+        }
+        
         // Email content using template
         const mailOptions = {
             from: process.env.SMTP_USER,
@@ -359,9 +353,8 @@ export async function sendNewPasswordEmail(req, res) {
             text: newPasswordEmailTextTemplate(email_receiver, new_password)
         };
         
-        // Send email with fallback
-        const result = await sendEmailWithFallback(mailOptions);
-        const info = { messageId: result.messageId };
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
         
         
         console.log(`✅ [MAILING] New password email sent successfully - Message ID: ${info.messageId}`);
@@ -402,6 +395,24 @@ export async function sendRequestPasswordResetEmail(req, res) {
             });
         }
         
+        // Create transporter with fallback
+        let transporter;
+        try {
+            transporter = await createTransporterWithFallback();
+        } catch (error) {
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
+            return res.status(500).json({ 
+                message: "Błąd konfiguracji usługi email.", 
+                response: false 
+            });
+        }
+        
         // Email content using template
         const mailOptions = {
             from: process.env.SMTP_USER,
@@ -411,9 +422,8 @@ export async function sendRequestPasswordResetEmail(req, res) {
             text: requestPasswordResetEmailTextTemplate(email_receiver, user_id, email_token)
         };
         
-        // Send email with fallback
-        const result = await sendEmailWithFallback(mailOptions);
-        const info = { messageId: result.messageId };
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
         
         
         console.log(`✅ [MAILING] Password reset request email sent successfully - Message ID: ${info.messageId}`);
@@ -447,6 +457,9 @@ export async function sendRequestPasswordResetEmailInternal(email_receiver, user
             throw new Error("Please provide a valid email address.");
         }
         
+        // Create transporter with fallback
+        const transporter = await createTransporterWithFallback();
+        
         // Email content using template
         const mailOptions = {
             from: process.env.SMTP_USER,
@@ -456,13 +469,13 @@ export async function sendRequestPasswordResetEmailInternal(email_receiver, user
             text: requestPasswordResetEmailTextTemplate(email_receiver, user_id, email_token)
         };
         
-        // Send email with fallback
-        const result = await sendEmailWithFallback(mailOptions);
-        console.log(`✅ [MAILING] Internal password reset request email sent successfully - Message ID: ${result.messageId}`);
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ [MAILING] Internal password reset request email sent successfully - Message ID: ${info.messageId}`);
         
         return {
             success: true,
-            messageId: result.messageId,
+            messageId: info.messageId,
             message: "Email żądania resetowania hasła został pomyślnie wysłany."
         };
         
@@ -496,6 +509,24 @@ export async function sendPasswordChangedEmail(req, res) {
             });
         }
         
+        // Create transporter with fallback
+        let transporter;
+        try {
+            transporter = await createTransporterWithFallback();
+        } catch (error) {
+            console.error('[SMTP] Configuration error:', error);
+            console.error('[SMTP] Error details:', {
+                code: error.code,
+                response: error.response,
+                responseCode: error.responseCode,
+                command: error.command
+            });
+            return res.status(500).json({ 
+                message: "Błąd konfiguracji usługi email.", 
+                response: false 
+            });
+        }
+        
         // Email content using template
         const mailOptions = {
             from: process.env.SMTP_USER,
@@ -505,9 +536,8 @@ export async function sendPasswordChangedEmail(req, res) {
             text: passwordChangedEmailTextTemplate(email_receiver)
         };
         
-        // Send email with fallback
-        const result = await sendEmailWithFallback(mailOptions);
-        const info = { messageId: result.messageId };
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
         
         
         console.log(`✅ [MAILING] Password changed notification email sent successfully - Message ID: ${info.messageId}`);
@@ -541,6 +571,9 @@ export async function sendPasswordChangedEmailInternal(email_receiver) {
             throw new Error("Please provide a valid email address.");
         }
         
+        // Create transporter with fallback
+        const transporter = await createTransporterWithFallback();
+        
         // Email content using template
         const mailOptions = {
             from: process.env.SMTP_USER,
@@ -550,13 +583,13 @@ export async function sendPasswordChangedEmailInternal(email_receiver) {
             text: passwordChangedEmailTextTemplate(email_receiver)
         };
         
-        // Send email with fallback
-        const result = await sendEmailWithFallback(mailOptions);
-        console.log(`✅ [MAILING] Internal password changed notification email sent successfully - Message ID: ${result.messageId}`);
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ [MAILING] Internal password changed notification email sent successfully - Message ID: ${info.messageId}`);
         
         return {
             success: true,
-            messageId: result.messageId,
+            messageId: info.messageId,
             message: "Email powiadomienia o zmianie hasła został pomyślnie wysłany."
         };
         
