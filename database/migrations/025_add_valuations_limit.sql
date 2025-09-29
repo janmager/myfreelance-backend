@@ -8,3 +8,4 @@
 INSERT INTO limits (name, premium_level_0, premium_level_1, premium_level_2) VALUES
 ('valuations', 5, 25, 100)
 ON CONFLICT (name) DO NOTHING;
+
