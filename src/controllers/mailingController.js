@@ -6,9 +6,38 @@ import { newPasswordEmailTemplate, newPasswordEmailTextTemplate } from '../templ
 import { requestPasswordResetEmailTemplate, requestPasswordResetEmailTextTemplate } from '../templates/emails/requestPasswordResetTemplate.js';
 import { passwordChangedEmailTemplate, passwordChangedEmailTextTemplate } from '../templates/emails/passwordChangedTemplate.js';
 
-// Create email transporter
-const createTransporter = () => {
-    const port = parseInt(process.env.SMTP_PORT);
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds
+
+// Helper function to sleep
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to verify transporter with retry
+const verifyTransporterWithRetry = async (transporter, maxRetries = MAX_RETRIES) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`[SMTP] Verifying transporter configuration (attempt ${attempt}/${maxRetries})...`);
+            await transporter.verify();
+            console.log('[SMTP] Transporter verification successful');
+            return true;
+        } catch (error) {
+            console.error(`[SMTP] Verification attempt ${attempt} failed:`, error.message);
+            
+            if (attempt === maxRetries) {
+                console.error('[SMTP] All verification attempts failed');
+                throw error;
+            }
+            
+            console.log(`[SMTP] Retrying in ${RETRY_DELAY}ms...`);
+            await sleep(RETRY_DELAY);
+        }
+    }
+};
+
+// Create email transporter with fallback ports
+const createTransporter = (fallbackPort = null) => {
+    const port = fallbackPort || parseInt(process.env.SMTP_PORT);
     const isSecure = port === 465;
     
     console.log(`[SMTP] Configuring transporter - Host: ${process.env.SMTP_HOST}, Port: ${port}, User: ${process.env.SMTP_USER}, Secure: ${isSecure}`);
@@ -23,8 +52,56 @@ const createTransporter = () => {
         },
         tls: {
             rejectUnauthorized: false // Allow self-signed certificates
-        }
+        },
+        connectionTimeout: 60000, // 60 seconds
+        greetingTimeout: 30000, // 30 seconds
+        socketTimeout: 60000, // 60 seconds
+        pool: true, // Use connection pooling
+        maxConnections: 5, // Maximum number of connections
+        maxMessages: 100, // Maximum messages per connection
+        rateDelta: 20000, // Rate limiting
+        rateLimit: 5 // Messages per rateDelta
     });
+};
+
+// Helper function to create transporter with fallback
+const createTransporterWithFallback = async () => {
+    const primaryPort = parseInt(process.env.SMTP_PORT);
+    const fallbackPorts = [587, 25]; // Common SMTP ports
+    
+    console.log(`[SMTP] Starting connection process with primary port ${primaryPort}`);
+    
+    // Try primary port first
+    try {
+        console.log(`[SMTP] Trying primary port ${primaryPort}...`);
+        const transporter = createTransporter();
+        await verifyTransporterWithRetry(transporter, 1); // Only 1 retry for primary
+        console.log(`[SMTP] Successfully connected using primary port ${primaryPort}`);
+        return transporter;
+    } catch (error) {
+        console.error(`[SMTP] Primary port ${primaryPort} failed:`, error.message);
+        console.error(`[SMTP] Error code: ${error.code}, Command: ${error.command}`);
+        
+        // Try fallback ports
+        for (const port of fallbackPorts) {
+            if (port === primaryPort) continue; // Skip if same as primary
+            
+            try {
+                console.log(`[SMTP] Trying fallback port ${port}...`);
+                const transporter = createTransporter(port);
+                await verifyTransporterWithRetry(transporter, 1); // Only 1 retry for fallback
+                console.log(`[SMTP] Successfully connected using fallback port ${port}`);
+                return transporter;
+            } catch (fallbackError) {
+                console.error(`[SMTP] Fallback port ${port} also failed:`, fallbackError.message);
+                console.error(`[SMTP] Fallback error code: ${fallbackError.code}, Command: ${fallbackError.command}`);
+            }
+        }
+        
+        // If all ports fail, throw the original error with additional context
+        console.error(`[SMTP] All connection attempts failed. Primary port: ${primaryPort}, Fallback ports: ${fallbackPorts.join(', ')}`);
+        throw new Error(`SMTP connection failed on all ports. Primary error: ${error.message}`);
+    }
 };
 
 export async function sendContactMessage(req, res) {
@@ -49,14 +126,10 @@ export async function sendContactMessage(req, res) {
             });
         }
         
-        // Create transporter
-        const transporter = createTransporter();
-        
-        // Verify transporter configuration
+        // Create transporter with fallback
+        let transporter;
         try {
-            console.log('[SMTP] Verifying transporter configuration...');
-            await transporter.verify();
-            console.log('[SMTP] Transporter verification successful');
+            transporter = await createTransporterWithFallback();
         } catch (error) {
             console.error('[SMTP] Configuration error:', error);
             console.error('[SMTP] Error details:', {
@@ -134,14 +207,10 @@ export async function sendConfirmAccountEmail(req, res) {
             });
         }
         
-        // Create transporter
-        const transporter = createTransporter();
-        
-        // Verify transporter configuration
+        // Create transporter with fallback
+        let transporter;
         try {
-            console.log('[SMTP] Verifying transporter configuration...');
-            await transporter.verify();
-            console.log('[SMTP] Transporter verification successful');
+            transporter = await createTransporterWithFallback();
         } catch (error) {
             console.error('[SMTP] Configuration error:', error);
             console.error('[SMTP] Error details:', {
@@ -200,13 +269,8 @@ export async function sendConfirmAccountEmailInternal(user_id, email_token, emai
             throw new Error("Please provide a valid email address.");
         }
         
-        // Create transporter
-        const transporter = createTransporter();
-        
-        // Verify transporter configuration
-        console.log('[SMTP] Verifying transporter configuration...');
-        await transporter.verify();
-        console.log('[SMTP] Transporter verification successful');
+        // Create transporter with fallback
+        const transporter = await createTransporterWithFallback();
         
         // Email content using template
         const mailOptions = {
@@ -257,14 +321,10 @@ export async function sendNewPasswordEmail(req, res) {
             });
         }
         
-        // Create transporter
-        const transporter = createTransporter();
-        
-        // Verify transporter configuration
+        // Create transporter with fallback
+        let transporter;
         try {
-            console.log('[SMTP] Verifying transporter configuration...');
-            await transporter.verify();
-            console.log('[SMTP] Transporter verification successful');
+            transporter = await createTransporterWithFallback();
         } catch (error) {
             console.error('[SMTP] Configuration error:', error);
             console.error('[SMTP] Error details:', {
@@ -330,14 +390,10 @@ export async function sendRequestPasswordResetEmail(req, res) {
             });
         }
         
-        // Create transporter
-        const transporter = createTransporter();
-        
-        // Verify transporter configuration
+        // Create transporter with fallback
+        let transporter;
         try {
-            console.log('[SMTP] Verifying transporter configuration...');
-            await transporter.verify();
-            console.log('[SMTP] Transporter verification successful');
+            transporter = await createTransporterWithFallback();
         } catch (error) {
             console.error('[SMTP] Configuration error:', error);
             console.error('[SMTP] Error details:', {
@@ -396,13 +452,8 @@ export async function sendRequestPasswordResetEmailInternal(email_receiver, user
             throw new Error("Please provide a valid email address.");
         }
         
-        // Create transporter
-        const transporter = createTransporter();
-        
-        // Verify transporter configuration
-        console.log('[SMTP] Verifying transporter configuration...');
-        await transporter.verify();
-        console.log('[SMTP] Transporter verification successful');
+        // Create transporter with fallback
+        const transporter = await createTransporterWithFallback();
         
         // Email content using template
         const mailOptions = {
@@ -453,14 +504,10 @@ export async function sendPasswordChangedEmail(req, res) {
             });
         }
         
-        // Create transporter
-        const transporter = createTransporter();
-        
-        // Verify transporter configuration
+        // Create transporter with fallback
+        let transporter;
         try {
-            console.log('[SMTP] Verifying transporter configuration...');
-            await transporter.verify();
-            console.log('[SMTP] Transporter verification successful');
+            transporter = await createTransporterWithFallback();
         } catch (error) {
             console.error('[SMTP] Configuration error:', error);
             console.error('[SMTP] Error details:', {
@@ -519,13 +566,8 @@ export async function sendPasswordChangedEmailInternal(email_receiver) {
             throw new Error("Please provide a valid email address.");
         }
         
-        // Create transporter
-        const transporter = createTransporter();
-        
-        // Verify transporter configuration
-        console.log('[SMTP] Verifying transporter configuration...');
-        await transporter.verify();
-        console.log('[SMTP] Transporter verification successful');
+        // Create transporter with fallback
+        const transporter = await createTransporterWithFallback();
         
         // Email content using template
         const mailOptions = {
