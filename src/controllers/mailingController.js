@@ -37,6 +37,12 @@ const verifyTransporterWithRetry = async (transporter, maxRetries = MAX_RETRIES)
 
 // Create email transporter with fallback ports
 const createTransporter = (fallbackPort = null) => {
+    console.log('createTransporter')
+    console.log(process.env.SMTP_HOST)
+    console.log(process.env.SMTP_PORT)
+    console.log(process.env.SMTP_USER)
+    console.log(process.env.SMTP_PASS)
+    console.log(process.env.CONTACT_EMAIL)
     const port = fallbackPort || parseInt(process.env.SMTP_PORT);
     const isSecure = port === 465;
     
