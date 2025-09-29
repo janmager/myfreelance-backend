@@ -50,6 +50,10 @@ const createTransporter = (fallbackPort = null) => {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS?.replace(/['"]/g, '') // Remove quotes if present
         },
+        debug: true,
+        tls: {
+            rejectUnauthorized: false // Allow self-signed certificates
+        },
         connectionTimeout: 60000, // 60 seconds
         greetingTimeout: 30000, // 30 seconds
         socketTimeout: 60000, // 60 seconds
