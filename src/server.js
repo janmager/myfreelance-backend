@@ -30,6 +30,9 @@ import adminProjectsRoutes from "./routes/adminProjectsRoutes.js";
 import adminSettingsRoutes from "./routes/adminSettingsRoutes.js";
 import maintenanceRoutes from "./routes/maintenanceRoutes.js";
 import valuationsRoutes from "./routes/valuationsRoutes.js";
+import publicClientRoutes from "./routes/publicClientRoutes.js";
+import messagesRoutes from "./routes/messagesRoutes.js";
+import freelancerMessagesRoutes from "./routes/freelancerMessagesRoutes.js";
 dotenv.config();
 //
 const app = express();
@@ -88,6 +91,9 @@ app.use("/api/admin/projects", adminProjectsRoutes);
 app.use("/api/admin/settings", adminSettingsRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/valuations", valuationsRoutes);
+app.use("/api/public-client", publicClientRoutes);
+app.use("/api/messages", messagesRoutes);
+app.use("/api/freelancer-messages", freelancerMessagesRoutes);
 
 // Log all routes
 console.log('📋 [ROUTES] Available API endpoints:');

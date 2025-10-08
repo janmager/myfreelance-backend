@@ -61,6 +61,8 @@ export async function initializeDatabase() {
 
         try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'personal'`; } catch (e) {}
         try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT ''`; } catch (e) {}
+        try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS password TEXT DEFAULT ''`; } catch (e) {}
+        try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS slug TEXT DEFAULT ''`; } catch (e) {}
         
         // Make email column optional (remove NOT NULL constraint)
         try { await sql`ALTER TABLE clients ALTER COLUMN email DROP NOT NULL`; } catch (e) {}
@@ -386,6 +388,48 @@ export async function initializeDatabase() {
                     BEFORE UPDATE ON valuations
                     FOR EACH ROW
                     EXECUTE FUNCTION update_valuations_updated_at()
+            `;
+        } catch (e) {}
+
+        // Messages table
+        await sql`
+            CREATE TABLE IF NOT EXISTS messages (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                sender_id TEXT NOT NULL,
+                receiver_id TEXT,
+                message TEXT NOT NULL CHECK (char_length(message) <= 1000),
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        `;
+
+        // Create indexes for messages
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_messages_receiver_id ON messages(receiver_id)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)`; } catch (e) {}
+        try { await sql`CREATE INDEX IF NOT EXISTS idx_messages_sender_receiver ON messages(sender_id, receiver_id)`; } catch (e) {}
+
+        // Create trigger for messages updated_at
+        try {
+            await sql`
+                CREATE OR REPLACE FUNCTION update_messages_updated_at()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = NOW();
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql
+            `;
+
+            await sql`
+                DROP TRIGGER IF EXISTS messages_updated_at_trigger ON messages
+            `;
+
+            await sql`
+                CREATE TRIGGER messages_updated_at_trigger
+                    BEFORE UPDATE ON messages
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_messages_updated_at()
             `;
         } catch (e) {}
 

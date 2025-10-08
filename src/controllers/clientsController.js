@@ -1,6 +1,22 @@
 import { sql } from "../config/db.js";
 import crypto from 'crypto';
 
+// Helper function to generate slug from name
+function generateSlug(name) {
+    const timestamp = Date.now();
+    const cleanName = name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+        .replace(/ł/g, 'l')
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+        .trim()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-'); // Remove multiple hyphens
+    
+    return `${cleanName}-${timestamp}`;
+}
+
 // ===== ADMIN ENDPOINTS =====
 // Wymagają admin_user_id w payload i weryfikacji type='admin'
 
@@ -82,7 +98,7 @@ export const editClientAdmin = async (req, res) => {
         }
 
         // Przygotuj dane do aktualizacji
-        const allowedFields = ['name', 'email', 'phone', 'address', 'city', 'state', 'zip', 'status', 'country', 'nip'];
+        const allowedFields = ['name', 'email', 'phone', 'address', 'city', 'state', 'zip', 'status', 'country', 'nip', 'password'];
         const fieldsToUpdate = {};
         
         allowedFields.forEach(field => {
@@ -90,6 +106,11 @@ export const editClientAdmin = async (req, res) => {
                 fieldsToUpdate[field] = updateData[field];
             }
         });
+
+        // Generate new slug if name is being updated
+        if (updateData.name !== undefined) {
+            fieldsToUpdate.slug = generateSlug(updateData.name);
+        }
 
         if (Object.keys(fieldsToUpdate).length === 0) {
             return res.status(400).json({ error: "No valid fields to update" });
@@ -348,14 +369,15 @@ export const addClient = async (req, res) => {
 
         // Stwórz nowego klienta
         const clientId = crypto.randomUUID();
+        const slug = generateSlug(name);
         const newClient = await sql`
             INSERT INTO clients (
                 client_id, name, email, phone, address, city, state, zip, 
-                country, nip, type, user_id, created_at, updated_at
+                country, nip, type, slug, user_id, created_at, updated_at
             ) VALUES (
                 ${clientId}, ${name}, ${email || null}, ${phone || null}, ${address || null}, 
                 ${city || null}, ${state || null}, ${zip || null}, 
-                ${country || null}, ${nip || null}, ${type || 'personal'}, ${user_id}, 
+                ${country || null}, ${nip || null}, ${type || 'personal'}, ${slug}, ${user_id}, 
                 NOW(), NOW()
             ) RETURNING *
         `;
@@ -439,7 +461,11 @@ export const editClient = async (req, res) => {
 
         // Przygotuj dane do aktualizacji
         const updateData = {};
-        if (name !== undefined) updateData.name = name;
+        if (name !== undefined) {
+            updateData.name = name;
+            // Generate new slug when name changes
+            updateData.slug = generateSlug(name);
+        }
         if (email !== undefined) updateData.email = email && email.trim() !== '' ? email : null;
         if (phone !== undefined) updateData.phone = phone;
         if (address !== undefined) updateData.address = address;
@@ -450,6 +476,7 @@ export const editClient = async (req, res) => {
         if (nip !== undefined) updateData.nip = nip;
         if (type !== undefined) updateData.type = type;
         if (status !== undefined) updateData.status = status;
+        if (req.body.password !== undefined) updateData.password = req.body.password;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: "No fields to update" });
