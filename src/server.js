@@ -33,6 +33,7 @@ import valuationsRoutes from "./routes/valuationsRoutes.js";
 import publicClientRoutes from "./routes/publicClientRoutes.js";
 import messagesRoutes from "./routes/messagesRoutes.js";
 import freelancerMessagesRoutes from "./routes/freelancerMessagesRoutes.js";
+import newsletterRoutes from "./routes/newsletterRoutes.js";
 dotenv.config();
 //
 const app = express();
@@ -94,6 +95,7 @@ app.use("/api/valuations", valuationsRoutes);
 app.use("/api/public-client", publicClientRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api/freelancer-messages", freelancerMessagesRoutes);
+app.use("/api/newsletter", newsletterRoutes);
 
 // Log all routes
 console.log('📋 [ROUTES] Available API endpoints:');
